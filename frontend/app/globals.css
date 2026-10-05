@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+:root {
+  --bg-canvas: #f2f0eb;
+  --bg-card: #ffffff;
+
+  --text-primary: #000000;
+  --text-secondary: #6b6b6b;
+  --text-muted: #999999;
+
+  --accent-blue-bg: #e8f0fe;
+  --accent-blue-text: #1967d2;
+
+  --accent-green-bg: #e6f4ea;
+  --accent-green-text: #1e8e3e;
+
+  --accent-red-bg: #fce8e6;
+  --accent-red-text: #d93025;
+
+  --accent-amber-bg: #fef7e0;
+  --accent-amber-text: #b06000;
+
+  --radius-lg: 18px;
+  --radius-sm: 8px;
+
+  --sidebar-width: 240px;
+
+  --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+}
+
+::selection {
+  background: #000;
+  color: #fff;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.dashboard-sidebar {
+  animation: fadeIn 0.5s ease both;
+}
+
+.dashboard-header {
+  animation: fadeInUp 0.5s ease 0.05s both;
+}
+
+.dashboard-card {
+  animation: fadeInUp 0.55s ease both;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+}
+
+.status-dot {
+  animation: pulseDot 2.4s ease-in-out infinite;
+}
+
+@media (max-width: 900px) {
+  .dashboard-shell {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .dashboard-sidebar nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .dashboard-sidebar .nav-group-label {
+    display: none;
+  }
+
+  .dashboard-sidebar .sidebar-footer {
+    display: none;
+  }
+
+  .dashboard-main {
+    padding: 28px 20px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 20px;
+  }
+
+  .dashboard-header-actions {
+    width: 100%;
+  }
+
+  .dashboard-header-actions button {
+    flex: 1;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-grid > * {
+    grid-column: span 1 !important;
+  }
+}
