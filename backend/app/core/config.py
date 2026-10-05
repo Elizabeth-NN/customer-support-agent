@@ -11,7 +11,12 @@ class Settings(BaseSettings):
     r2_secret_access_key: str
     r2_bucket_name: str
 
-    ollama_base_url: str = "http://localhost:11434"
+    llm_provider: str = "ollama"
+    llm_base_url: str = "http://localhost:11434"
+    llm_embedding_model: str = "nomic-embed-text"
+    llm_chat_model: str = "qwen3:1.7b"
+    llm_thinking: bool = False
+    llm_timeout: float = 180.0
 
     app_env: str = "development"
 

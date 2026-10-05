@@ -1,23 +1,7 @@
-import httpx
-
-from app.core.config import get_settings
-
-
-settings = get_settings()
+from app.services.llm import generate_embedding as generate_llm_embedding
 
 
 def generate_embedding(text: str) -> list[float]:
-    """Generate a 768-dimensional embedding using Ollama."""
+    """Generate an embedding using the configured LLM."""
 
-    response = httpx.post(
-        f"{settings.ollama_base_url}/api/embed",
-        json={
-            "model": "nomic-embed-text",
-            "input": text,
-        },
-        timeout=120,
-    )
-
-    response.raise_for_status()
-
-    return response.json()["embeddings"][0]
+    return generate_llm_embedding(text)

@@ -1,10 +1,5 @@
-import httpx
-
-from app.core.config import get_settings
+from app.services.llm import generate_text
 from app.services.retrieval import retrieve_relevant_chunks
-
-
-settings = get_settings()
 
 
 def generate_answer(
@@ -41,16 +36,4 @@ Customer question:
 
 Answer:"""
 
-    response = httpx.post(
-        f"{settings.ollama_base_url}/api/generate",
-        json={
-            "model": "qwen3:1.7b",
-            "prompt": prompt,
-            "stream": False,
-        },
-        timeout=120,
-    )
-
-    response.raise_for_status()
-
-    return response.json()["response"].strip()
+    return generate_text(prompt)
