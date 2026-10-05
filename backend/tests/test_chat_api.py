@@ -28,3 +28,30 @@ def test_chat_endpoint(monkeypatch):
     assert data == {
         "answer": "Customer support is available from Monday to Friday, 8 AM to 5 PM."
     }
+
+
+def test_chat_rejects_empty_question():
+    response = client.post(
+        "/api/chat",
+        json={"question": ""},
+    )
+
+    assert response.status_code == 422
+
+
+def test_chat_rejects_whitespace_question():
+    response = client.post(
+        "/api/chat",
+        json={"question": "   "},
+    )
+
+    assert response.status_code == 422
+
+
+def test_chat_rejects_question_over_2000_characters():
+    response = client.post(
+        "/api/chat",
+        json={"question": "a" * 2001},
+    )
+
+    assert response.status_code == 422
