@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -36,4 +36,10 @@ class Business(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+    knowledge_documents = relationship(
+        "KnowledgeDocument",
+        back_populates="business",
+        cascade="all, delete-orphan",
     )
