@@ -27,6 +27,10 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
 
+    # Rate limiting
+    rate_limit_enabled: bool = True
+    rate_limit_chat: str = "20/minute"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -55,3 +55,32 @@ def test_chat_rejects_question_over_2000_characters():
     )
 
     assert response.status_code == 422
+
+def test_chat_rate_limit(monkeypatch):
+    from app.core.rate_limit import limiter
+
+    def mock_generate_answer(question: str, limit: int = 5) -> str:
+        return "Customer support is available from Monday to Friday, 8 AM to 5 PM."
+
+    monkeypatch.setattr(
+        "app.api.routes.chat.generate_answer",
+        mock_generate_answer,
+    )
+
+    # Clear requests made by previous tests.
+    limiter._storage.reset()
+
+    responses = []
+
+    for _ in range(21):
+        responses.append(
+            client.post(
+                "/api/chat",
+                json={"question": "When is customer support available?"},
+            )
+        )
+
+    assert all(response.status_code == 200 for response in responses[:20])
+    assert responses[20].status_code == 429
+
+
