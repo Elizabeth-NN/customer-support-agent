@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi.testclient import TestClient
 
 from app.core.auth import require_auth
@@ -6,10 +8,13 @@ from app.main import app
 
 client = TestClient(app)
 
+TEST_CLERK_USER_ID = "user_3KJyYGDtv0ysYHixbueDC8VHmLb"
+TEST_BUSINESS_ID = UUID("cf1a1025-66cd-4552-b7fd-dadebb0beebe")
+
 
 def fake_authenticated_user() -> dict:
     return {
-        "sub": "test_user_123",
+        "sub": TEST_CLERK_USER_ID,
     }
 
 
@@ -25,9 +30,18 @@ def test_chat_endpoint(monkeypatch):
     setup_authenticated_client()
 
     try:
-        def mock_generate_answer(question: str, limit: int = 5) -> str:
+        def mock_generate_answer(
+            question: str,
+            business_id: UUID,
+            limit: int = 5,
+        ) -> str:
             assert question == "When is customer support available?"
-            return "Customer support is available from Monday to Friday, 8 AM to 5 PM."
+            assert business_id == TEST_BUSINESS_ID
+
+            return (
+                "Customer support is available from Monday to Friday, "
+                "8 AM to 5 PM."
+            )
 
         monkeypatch.setattr(
             "app.api.routes.chat.generate_answer",
@@ -40,11 +54,11 @@ def test_chat_endpoint(monkeypatch):
         )
 
         assert response.status_code == 200
-
-        data = response.json()
-
-        assert data == {
-            "answer": "Customer support is available from Monday to Friday, 8 AM to 5 PM."
+        assert response.json() == {
+            "answer": (
+                "Customer support is available from Monday to Friday, "
+                "8 AM to 5 PM."
+            )
         }
     finally:
         teardown_authenticated_client()
@@ -98,15 +112,23 @@ def test_chat_rate_limit(monkeypatch):
     try:
         from app.core.rate_limit import limiter
 
-        def mock_generate_answer(question: str, limit: int = 5) -> str:
-            return "Customer support is available from Monday to Friday, 8 AM to 5 PM."
+        def mock_generate_answer(
+            question: str,
+            business_id: UUID,
+            limit: int = 5,
+        ) -> str:
+            assert business_id == TEST_BUSINESS_ID
+
+            return (
+                "Customer support is available from Monday to Friday, "
+                "8 AM to 5 PM."
+            )
 
         monkeypatch.setattr(
             "app.api.routes.chat.generate_answer",
             mock_generate_answer,
         )
 
-        # Clear requests made by previous tests.
         limiter._storage.reset()
 
         responses = []
@@ -115,11 +137,16 @@ def test_chat_rate_limit(monkeypatch):
             responses.append(
                 client.post(
                     "/api/chat",
-                    json={"question": "When is customer support available?"},
+                    json={
+                        "question": "When is customer support available?"
+                    },
                 )
             )
 
-        assert all(response.status_code == 200 for response in responses[:20])
+        assert all(
+            response.status_code == 200
+            for response in responses[:20]
+        )
         assert responses[20].status_code == 429
 
     finally:

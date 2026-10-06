@@ -1,15 +1,19 @@
+from uuid import UUID
+
 from app.services.llm import generate_text
 from app.services.retrieval import retrieve_relevant_chunks
 
 
 def generate_answer(
     question: str,
+    business_id: UUID,
     limit: int = 5,
 ) -> str:
-    """Generate a grounded answer using retrieved knowledge."""
+    """Generate a grounded answer using the business's knowledge."""
 
     chunks = retrieve_relevant_chunks(
         question,
+        business_id=business_id,
         limit=limit,
     )
 
