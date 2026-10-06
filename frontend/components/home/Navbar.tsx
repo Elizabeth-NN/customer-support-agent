@@ -3,6 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  useAuth,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
+import {
   Bars3Icon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -16,6 +22,7 @@ const navLinks = [
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
@@ -48,21 +55,47 @@ export default function Navbar() {
           </div>
         </div>
 
+        
         {/* Desktop actions */}
         <div className="hidden items-center gap-4 md:flex">
-          <button
-            type="button"
-            className="rounded-[8px] px-4 py-2 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:bg-stone-100 hover:shadow-sm active:translate-y-0"
-          >
-            Sign in
-          </button>
+          {!isLoaded ? null : isSignedIn ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="rounded-[8px] px-4 py-2 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:bg-stone-100 hover:shadow-sm"
+              >
+                Dashboard
+              </Link>
 
-          <button
-            type="button"
-            className="btn-primary rounded-[8px] px-6 py-2.5 text-sm font-semibold transition-all duration-200 hover:-translate-y-1 hover:shadow-lg active:translate-y-0"
-          >
-            Start free trial
-          </button>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "h-9 w-9",
+                  },
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <SignInButton mode="redirect">
+                <button
+                  type="button"
+                  className="rounded-[8px] px-4 py-2 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:bg-stone-100 hover:shadow-sm active:translate-y-0"
+                >
+                  Sign in
+                </button>
+              </SignInButton>
+
+              <SignUpButton mode="redirect">
+                <button
+                  type="button"
+                  className="btn-primary rounded-[8px] px-6 py-2.5 text-sm font-semibold transition-all duration-200 hover:-translate-y-1 hover:shadow-lg active:translate-y-0"
+                >
+                  Start free trial
+                </button>
+              </SignUpButton>
+            </>
+          )}
         </div>
 
         {/* Mobile menu button */}
@@ -96,21 +129,48 @@ export default function Navbar() {
               </Link>
             ))}
 
-            <div className="mt-3 flex flex-col gap-2 border-t border-stone-200 pt-4">
-              <button
-                type="button"
-                className="w-full rounded-lg px-4 py-3 text-left text-sm font-semibold text-stone-700 hover:bg-white hover:text-black"
-              >
-                Sign in
-              </button>
+            {!isLoaded ? null : isSignedIn ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={closeMobileMenu}
+                  className="rounded-lg px-4 py-3 text-sm font-semibold text-stone-700 hover:bg-white hover:text-black"
+                >
+                  Dashboard
+                </Link>
 
-              <button
-                type="button"
-                className="btn-primary w-full rounded-[8px] px-6 py-3 text-sm font-semibold"
-              >
-                Start free trial
-              </button>
-            </div>
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-8 w-8",
+                      },
+                    }}
+                  />
+                  <span className="text-sm font-semibold">Account</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <SignInButton mode="redirect">
+                  <button
+                    type="button"
+                    className="w-full rounded-lg px-4 py-3 text-left text-sm font-semibold text-stone-700 hover:bg-white hover:text-black"
+                  >
+                    Sign in
+                  </button>
+                </SignInButton>
+
+                <SignUpButton mode="redirect">
+                  <button
+                    type="button"
+                    className="btn-primary w-full rounded-[8px] px-6 py-3 text-sm font-semibold"
+                  >
+                    Start free trial
+                  </button>
+                </SignUpButton>
+              </>
+            )}
           </div>
         </div>
       )}

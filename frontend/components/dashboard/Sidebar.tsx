@@ -1,8 +1,19 @@
 "use client";
 
 import type { ComponentType, SVGProps } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  useAuth,
+  useClerk,
+  useUser,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
+import {
+  ArrowRightOnRectangleIcon,
   BookOpenIcon,
   ChatBubbleLeftRightIcon,
   ChevronUpDownIcon,
@@ -19,7 +30,6 @@ export type NavItem = {
   label: string;
   href: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
-  active?: boolean;
   count?: number;
 };
 
@@ -32,7 +42,7 @@ const navigation: NavGroup[] = [
   {
     group: "Platform",
     items: [
-      { label: "Overview", href: "/", icon: HomeIcon, active: true },
+      { label: "Overview", href: "/dashboard", icon: HomeIcon },
       { label: "Conversations", href: "/conversations", icon: ChatBubbleLeftRightIcon },
       {
         label: "Escalations",
@@ -58,6 +68,69 @@ const navigation: NavGroup[] = [
   },
 ];
 
+function SidebarUser() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center gap-3 px-3 py-1">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-black/10" />
+        <div className="h-4 w-24 animate-pulse rounded bg-black/10" />
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="flex flex-col gap-2 px-1">
+        <SignInButton mode="modal">
+          <button
+            type="button"
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-black/[0.05] ${focusRing}`}
+          >
+            Sign in
+          </button>
+        </SignInButton>
+        <SignUpButton mode="modal">
+          <button
+            type="button"
+            className={`rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#2a2a2a] ${focusRing}`}
+          >
+            Sign up
+          </button>
+        </SignUpButton>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-3 py-1">
+      <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
+
+      <div className="min-w-0 flex-1 text-[13px] leading-[1.4]">
+        <div className="truncate font-semibold">
+          {user?.fullName ?? user?.username ?? "Account"}
+        </div>
+        <div className="truncate text-xs text-[#8A8A8A]">
+          {user?.primaryEmailAddress?.emailAddress}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => signOut({ redirectUrl: "/" })}
+        aria-label="Sign out"
+        title="Sign out"
+        className={`shrink-0 rounded-lg p-2 text-[#6B6B6B] transition hover:bg-black/[0.05] hover:text-black ${focusRing}`}
+      >
+        <ArrowRightOnRectangleIcon className="h-[18px] w-[18px]" />
+      </button>
+    </div>
+  );
+}
+
 type SidebarProps = {
   open: boolean;
   onClose: () => void;
@@ -69,6 +142,11 @@ export default function Sidebar({
   onClose,
   items = navigation,
 }: SidebarProps) {
+  const pathname = usePathname();
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+
   return (
     <>
       {/* Mobile / tablet backdrop */}
@@ -121,22 +199,23 @@ export default function Sidebar({
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon;
+                  const active = isActive(item.href);
 
                   return (
                     <li key={item.label}>
-                      <a
+                      <Link
                         href={item.href}
                         onClick={onClose}
-                        aria-current={item.active ? "page" : undefined}
+                        aria-current={active ? "page" : undefined}
                         className={`flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition ${focusRing} ${
-                          item.active
+                          active
                             ? "bg-white text-black shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_rgba(0,0,0,0.03)]"
                             : "text-[#5F5F5F] hover:bg-black/[0.04] hover:text-black"
                         }`}
                       >
                         <Icon
                           className={`mr-3 h-[18px] w-[18px] ${
-                            item.active ? "opacity-100" : "opacity-60"
+                            active ? "opacity-100" : "opacity-60"
                           }`}
                         />
 
@@ -147,7 +226,7 @@ export default function Sidebar({
                             {item.count}
                           </span>
                         ) : null}
-                      </a>
+                      </Link>
                     </li>
                   );
                 })}
@@ -165,18 +244,7 @@ export default function Sidebar({
             <ChevronUpDownIcon className="h-4 w-4 text-[#8A8A8A]" />
           </button>
 
-          <div className="flex items-center gap-3 px-3 py-1">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DAD6CC] text-xs font-semibold">
-              JV
-            </div>
-
-            <div className="min-w-0 text-[13px] leading-[1.4]">
-              <div className="truncate font-semibold">Julian Voss</div>
-              <div className="text-xs text-[#8A8A8A]">
-                Administrator
-              </div>
-            </div>
-          </div>
+          <SidebarUser />
         </div>
       </aside>
     </>
