@@ -7,7 +7,7 @@ import {
   Bars3Icon,
   BellAlertIcon,
 } from "@heroicons/react/24/outline";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/dashboard/Sidebar";
 import { focusRing } from "@/lib/ui";
 
 type Tone = "blue" | "green" | "red" | "amber";

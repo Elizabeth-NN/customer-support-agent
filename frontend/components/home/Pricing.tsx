@@ -1,8 +1,16 @@
+import { CheckIcon } from "@heroicons/react/24/outline";
+
 export default function Pricing() {
   return (
-    <section id="pricing" className="w-full border-y border-stone-100 bg-white px-8 py-20">
+    <section
+      id="pricing"
+      className="w-full scroll-mt-24 border-y border-stone-100 bg-white px-8 py-20"
+    >
       <div className="mx-auto max-w-6xl">
-        <div className="mb-16 text-center">
+        <div
+          className="mb-16 text-center"
+          style={{ animation: "fadeInUp 0.55s ease both" }}
+        >
           <div className="badge badge-blue mb-4">Pricing</div>
 
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
@@ -28,9 +36,13 @@ export default function Pricing() {
               "Basic handoff summaries",
             ]}
             button="Start free trial"
+            delay="0.1s"
           />
 
-          <div className="relative flex flex-col overflow-hidden rounded-[18px] bg-black p-8 text-white shadow-[0_12px_32px_rgba(0,0,0,0.15)]">
+          <div
+            className="dashboard-card relative flex flex-col overflow-hidden rounded-[18px] bg-black p-8 text-white shadow-[0_12px_32px_rgba(0,0,0,0.15)]"
+            style={{ animationDelay: "0.18s" }}
+          >
             <span className="badge badge-green mb-5 self-start">
               Most Popular
             </span>
@@ -39,6 +51,7 @@ export default function Pricing() {
               <span className="text-4xl font-bold tracking-tight">
                 KES 14,900
               </span>
+
               <span className="text-sm font-semibold text-stone-400">
                 /month
               </span>
@@ -60,7 +73,7 @@ export default function Pricing() {
 
             <button
               type="button"
-              className="mt-auto w-full rounded-[12px] bg-white py-3 font-bold text-black transition-colors hover:bg-stone-100"
+              className="mt-auto w-full rounded-[12px] bg-white py-3 font-bold text-black transition-all duration-200 hover:-translate-y-0.5 hover:bg-stone-100"
             >
               Start free trial
             </button>
@@ -78,10 +91,14 @@ export default function Pricing() {
               "24/7 priority support",
             ]}
             button="Talk to sales"
+            delay="0.26s"
           />
         </div>
 
-        <p className="mt-12 text-center text-xs font-bold uppercase tracking-widest text-stone-400">
+        <p
+          className="mt-12 text-center text-xs font-bold uppercase tracking-widest text-stone-400"
+          style={{ animation: "fadeIn 0.6s ease 0.4s both" }}
+        >
           All prices in KES, excluding VAT · Every plan starts with a 14-day
           free trial
         </p>
@@ -97,6 +114,7 @@ function PricingCard({
   description,
   features,
   button,
+  delay,
 }: {
   badge: string;
   badgeClass: string;
@@ -104,9 +122,13 @@ function PricingCard({
   description: string;
   features: string[];
   button: string;
+  delay: string;
 }) {
   return (
-    <div className="card flex flex-col p-8">
+    <div
+      className="dashboard-card card flex flex-col p-8"
+      style={{ animationDelay: delay }}
+    >
       <span className={`badge ${badgeClass} mb-5 self-start`}>{badge}</span>
 
       <div className="mb-3 flex items-baseline gap-2">
@@ -149,19 +171,10 @@ function FeatureList({
               dark ? "bg-white/10" : "bg-stone-100"
             }`}
           >
-            <svg
+            <CheckIcon
               className={`h-3 w-3 ${dark ? "text-white" : "text-black"}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="3"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+              strokeWidth={3}
+            />
           </div>
 
           <span>{feature}</span>

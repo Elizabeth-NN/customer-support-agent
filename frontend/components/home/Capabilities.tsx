@@ -1,10 +1,16 @@
+import {
+  BoltIcon,
+  UserGroupIcon,
+  ClipboardDocumentListIcon,
+} from "@heroicons/react/24/outline";
+
 const capabilities = [
   {
     title: "Instant Resolution",
     description:
       "Rafiki learns from your documentation, past conversations, and API tools to solve problems, not just talk about them.",
     metric: "94.2% AI SUCCESS RATE",
-    icon: "⚡",
+    icon: BoltIcon,
     iconClass: "bg-blue-50 text-blue-600",
     dotClass: "bg-green-500",
   },
@@ -13,7 +19,7 @@ const capabilities = [
     description:
       "When things get complex, Rafiki gathers all necessary context and hands off to your humans with a full summary.",
     metric: "CONTEXTUAL SUMMARIES",
-    icon: "◉",
+    icon: UserGroupIcon,
     iconClass: "bg-amber-50 text-amber-600",
     dotClass: "bg-blue-500",
   },
@@ -22,7 +28,7 @@ const capabilities = [
     description:
       "Identify documentation gaps automatically. Rafiki alerts you when users ask questions you haven't answered yet.",
     metric: "PROACTIVE FIXES",
-    icon: "▤",
+    icon: ClipboardDocumentListIcon,
     iconClass: "bg-red-50 text-red-600",
     dotClass: "bg-red-500",
   },
@@ -30,45 +36,60 @@ const capabilities = [
 
 export default function Capabilities() {
   return (
-    <section id="knowledge" className="mx-auto w-full max-w-7xl px-8 py-32">
-      <div className="mb-20 text-center">
+    <section
+      id="knowledge"
+      className="mx-auto w-full max-w-7xl scroll-mt-24 px-6 py-24 md:px-8 md:py-32"
+    >
+      <div className="mb-16 text-center md:mb-20 animate-fade-in-up">
         <div className="badge badge-green mb-4">Capabilities</div>
 
-        <h2 className="text-4xl font-bold tracking-tight">
+        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
           Everything your support team
-          <br />
+          <br className="hidden md:block" />
           needs to scale infinitely.
         </h2>
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        {capabilities.map((capability) => (
-          <div key={capability.title} className="card flex flex-col p-8">
+        {capabilities.map((capability, index) => {
+          const Icon = capability.icon;
+
+          return (
             <div
-              className={`mb-6 flex h-12 w-12 items-center justify-center rounded-xl text-xl font-bold ${capability.iconClass}`}
+              key={capability.title}
+              className="card dashboard-card flex flex-col p-8 animate-fade-in-up"
+              style={{
+                animationDelay: `${0.1 + index * 0.12}s`,
+              }}
             >
-              {capability.icon}
-            </div>
+              <div
+                className={`mb-6 flex h-12 w-12 items-center justify-center rounded-xl ${capability.iconClass}`}
+              >
+                <Icon className="h-6 w-6" />
+              </div>
 
-            <h3 className="mb-3 text-xl font-bold">{capability.title}</h3>
+              <h3 className="mb-3 text-xl font-bold">
+                {capability.title}
+              </h3>
 
-            <p className="mb-6 text-sm leading-relaxed text-stone-500">
-              {capability.description}
-            </p>
+              <p className="mb-6 text-sm leading-relaxed text-stone-500">
+                {capability.description}
+              </p>
 
-            <div className="mt-auto border-t border-stone-50 pt-4">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${capability.dotClass}`}
-                />
+              <div className="mt-auto border-t border-stone-50 pt-4">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`h-1.5 w-1.5 rounded-full ${capability.dotClass}`}
+                  />
 
-                <span className="text-xs font-bold text-stone-400">
-                  {capability.metric}
-                </span>
+                  <span className="text-xs font-bold text-stone-400">
+                    {capability.metric}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
