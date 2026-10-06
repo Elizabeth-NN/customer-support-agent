@@ -17,6 +17,7 @@ import { focusRing } from "@/lib/ui";
 
 export type NavItem = {
   label: string;
+  href: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   active?: boolean;
   count?: number;
@@ -31,10 +32,11 @@ const navigation: NavGroup[] = [
   {
     group: "Platform",
     items: [
-      { label: "Overview", icon: HomeIcon, active: true },
-      { label: "Conversations", icon: ChatBubbleLeftRightIcon },
+      { label: "Overview", href: "/", icon: HomeIcon, active: true },
+      { label: "Conversations", href: "/conversations", icon: ChatBubbleLeftRightIcon },
       {
         label: "Escalations",
+        href: "/escalations",
         icon: ExclamationTriangleIcon,
         count: 3,
       },
@@ -43,15 +45,15 @@ const navigation: NavGroup[] = [
   {
     group: "Knowledge",
     items: [
-      { label: "Documents", icon: BookOpenIcon },
-      { label: "Tools", icon: WrenchScrewdriverIcon },
+      { label: "Documents", href: "/documents", icon: BookOpenIcon },
+      { label: "Tools", href: "/tools", icon: WrenchScrewdriverIcon },
     ],
   },
   {
     group: "Quality",
     items: [
-      { label: "Evaluations", icon: ShieldCheckIcon },
-      { label: "Settings", icon: Cog6ToothIcon },
+      { label: "Evaluations", href: "/evaluations", icon: ShieldCheckIcon },
+      { label: "Settings", href: "/settings", icon: Cog6ToothIcon },
     ],
   },
 ];
@@ -123,7 +125,7 @@ export default function Sidebar({
                   return (
                     <li key={item.label}>
                       <a
-                        href="#"
+                        href={item.href}
                         onClick={onClose}
                         aria-current={item.active ? "page" : undefined}
                         className={`flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition ${focusRing} ${

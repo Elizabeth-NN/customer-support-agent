@@ -43,6 +43,7 @@ body {
   background: var(--bg-canvas);
   color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
 }
 
 button,
@@ -58,6 +59,117 @@ button {
   background: #000;
   color: #fff;
 }
+
+/* =========================================================
+   HOMEPAGE
+   ========================================================= */
+
+.btn-primary {
+  background-color: var(--text-primary);
+  color: #ffffff;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-subtle);
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-subtle);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.badge-blue {
+  background: var(--accent-blue-bg);
+  color: var(--accent-blue-text);
+}
+
+.badge-green {
+  background: var(--accent-green-bg);
+  color: var(--accent-green-text);
+}
+
+.badge-red {
+  background: var(--accent-red-bg);
+  color: var(--accent-red-text);
+}
+
+.badge-amber {
+  background: var(--accent-amber-bg);
+  color: var(--accent-amber-text);
+}
+
+.logo-mark {
+  width: 24px;
+  height: 24px;
+  background: var(--text-primary);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.hero-gradient {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(242, 240, 235, 0) 70%
+    );
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* =========================================================
+   EXISTING DASHBOARD ANIMATIONS
+   ========================================================= */
 
 @keyframes fadeInUp {
   from {
@@ -116,6 +228,10 @@ button {
   animation: pulseDot 2.4s ease-in-out infinite;
 }
 
+/* =========================================================
+   RESPONSIVE DASHBOARD
+   ========================================================= */
+
 @media (max-width: 900px) {
   .dashboard-shell {
     flex-direction: column;
@@ -168,5 +284,30 @@ button {
 
   .dashboard-grid > * {
     grid-column: span 1 !important;
+  }
+}
+
+/* =========================================================
+   ACCESSIBILITY / MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-float,
+  .dashboard-sidebar,
+  .dashboard-header,
+  .dashboard-card,
+  .status-dot {
+    animation: none;
+  }
+
+  .card:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .dashboard-card:hover {
+    transform: none;
   }
 }
