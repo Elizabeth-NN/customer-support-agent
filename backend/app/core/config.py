@@ -19,10 +19,17 @@ class Settings(BaseSettings):
 
     # LLM
     llm_provider: str = "ollama"
+
+    # Ollama
     llm_base_url: str = "http://localhost:11434"
     llm_embedding_model: str = "nomic-embed-text"
     llm_chat_model: str = "qwen3:1.7b"
     llm_thinking: bool = False
+
+    # Gemini
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.1-flash-lite"
+
     llm_timeout: float = 180.0
 
     app_env: str = "development"
