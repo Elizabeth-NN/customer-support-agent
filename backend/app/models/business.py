@@ -1,4 +1,3 @@
-
 import uuid
 from datetime import datetime
 
@@ -58,3 +57,14 @@ class Business(Base):
         cascade="all, delete-orphan",
     )
 
+    customers = relationship(
+        "Customer",
+        back_populates="business",
+        cascade="all, delete-orphan",
+    )
+
+    orders = relationship(
+        "Order",
+        back_populates="business",
+        cascade="all, delete-orphan",
+    )

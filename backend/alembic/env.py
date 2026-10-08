@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.db.base import Base
 
 # Import all models so SQLAlchemy registers their tables with Base.metadata.
-from app.models import Business, KnowledgeDocument, DocumentChunk, SupportTicket
+from app.models import Business, Customer, KnowledgeDocument, DocumentChunk, Order, SupportTicket
 
 config = context.config
 
