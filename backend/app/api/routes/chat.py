@@ -1,13 +1,15 @@
+from collections.abc import Iterator
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import text
 
 from app.core.auth import require_auth
 from app.core.rate_limit import limiter
 from app.db.session import engine
-from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.rag import generate_answer
+from app.schemas.chat import ChatRequest
+from app.services.rag import generate_answer_stream
 
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -37,13 +39,13 @@ def get_business_id_for_user(clerk_user_id: str) -> UUID:
     return business_id
 
 
-@router.post("", response_model=ChatResponse)
+@router.post("")
 @limiter.limit("20/minute")
 def chat(
     request: Request,
     chat_request: ChatRequest,
     auth_payload: dict = Depends(require_auth),
-) -> ChatResponse:
+) -> StreamingResponse:
     clerk_user_id = auth_payload.get("sub")
 
     if not clerk_user_id:
@@ -54,9 +56,17 @@ def chat(
 
     business_id = get_business_id_for_user(clerk_user_id)
 
-    answer = generate_answer(
-        chat_request.question,
-        business_id=business_id,
-    )
+    def stream() -> Iterator[str]:
+        yield from generate_answer_stream(
+            chat_request.question,
+            business_id=business_id,
+        )
 
-    return ChatResponse(answer=answer)
+    return StreamingResponse(
+        stream(),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
