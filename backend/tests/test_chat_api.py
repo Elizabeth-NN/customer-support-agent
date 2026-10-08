@@ -1,3 +1,4 @@
+
 import json
 from uuid import UUID
 
@@ -11,6 +12,8 @@ client = TestClient(app)
 
 TEST_CLERK_USER_ID = "user_3KJyYGDtv0ysYHixbueDC8VHmLb"
 TEST_BUSINESS_ID = UUID("cf1a1025-66cd-4552-b7fd-dadebb0beebe")
+TEST_DOCUMENT_ID = UUID("11111111-1111-1111-1111-111111111111")
+TEST_CHUNK_ID = UUID("22222222-2222-2222-2222-222222222222")
 
 
 def fake_authenticated_user() -> dict:
@@ -32,6 +35,34 @@ def test_chat_endpoint(monkeypatch):
 
     try:
 
+        def mock_retrieve_answer_context(
+            question: str,
+            business_id: UUID,
+            limit: int = 5,
+        ):
+            assert question == "When is customer support available?"
+            assert business_id == TEST_BUSINESS_ID
+            assert limit == 5
+
+            return (
+                "mock grounded prompt",
+                [
+                    {
+                        "document_id": str(TEST_DOCUMENT_ID),
+                        "document_title": "Customer Support FAQ",
+                        "source_type": "document",
+                        "source_uri": None,
+                        "chunk_id": str(TEST_CHUNK_ID),
+                        "chunk_index": 0,
+                        "distance": 0.12,
+                        "content": (
+                            "Customer support hours are Monday to Friday, "
+                            "8 AM to 5 PM."
+                        ),
+                    }
+                ],
+            )
+
         def mock_generate_answer_stream(
             question: str,
             business_id: UUID,
@@ -43,6 +74,11 @@ def test_chat_endpoint(monkeypatch):
             yield "Customer support is available "
             yield "from Monday to Friday, "
             yield "8 AM to 5 PM."
+
+        monkeypatch.setattr(
+            "app.api.routes.chat.retrieve_answer_context",
+            mock_retrieve_answer_context,
+        )
 
         monkeypatch.setattr(
             "app.api.routes.chat.generate_answer_stream",
@@ -65,12 +101,30 @@ def test_chat_endpoint(monkeypatch):
             if line.strip()
         ]
 
-        assert len(lines) >= 3
-
         events = [json.loads(line) for line in lines]
 
         assert events[0]["type"] == "sources"
-        assert len(events[0]["sources"]) > 0
+        assert len(events[0]["sources"]) == 1
+
+        source = events[0]["sources"][0]
+
+        assert source["document_id"] == str(TEST_DOCUMENT_ID)
+        assert source["document_title"] == "Customer Support FAQ"
+        assert source["chunk_id"] == str(TEST_CHUNK_ID)
+        assert source["distance"] == 0.12
+        assert source["content"] == (
+            "Customer support hours are Monday to Friday, "
+            "8 AM to 5 PM."
+        )
+
+        escalation_events = [
+            event
+            for event in events
+            if event["type"] == "escalation"
+        ]
+
+        assert len(escalation_events) == 1
+        assert escalation_events[0]["required"] is False
 
         token_events = [
             event
@@ -93,6 +147,7 @@ def test_chat_endpoint(monkeypatch):
 
     finally:
         teardown_authenticated_client()
+
 
 def test_chat_rejects_empty_question():
     setup_authenticated_client()
@@ -145,6 +200,30 @@ def test_chat_rate_limit(monkeypatch):
     try:
         from app.core.rate_limit import limiter
 
+        def mock_retrieve_answer_context(
+            question: str,
+            business_id: UUID,
+            limit: int = 5,
+        ):
+            return (
+                "mock grounded prompt",
+                [
+                    {
+                        "document_id": str(TEST_DOCUMENT_ID),
+                        "document_title": "Customer Support FAQ",
+                        "source_type": "document",
+                        "source_uri": None,
+                        "chunk_id": str(TEST_CHUNK_ID),
+                        "chunk_index": 0,
+                        "distance": 0.12,
+                        "content": (
+                            "Customer support hours are Monday to Friday, "
+                            "8 AM to 5 PM."
+                        ),
+                    }
+                ],
+            )
+
         def mock_generate_answer_stream(
             question: str,
             business_id: UUID,
@@ -155,6 +234,11 @@ def test_chat_rate_limit(monkeypatch):
             yield "Customer support is available "
             yield "from Monday to Friday, "
             yield "8 AM to 5 PM."
+
+        monkeypatch.setattr(
+            "app.api.routes.chat.retrieve_answer_context",
+            mock_retrieve_answer_context,
+        )
 
         monkeypatch.setattr(
             "app.api.routes.chat.generate_answer_stream",
@@ -179,8 +263,10 @@ def test_chat_rate_limit(monkeypatch):
             response.status_code == 200
             for response in responses[:20]
         )
+
         assert responses[20].status_code == 429
 
     finally:
         limiter._storage.reset()
         teardown_authenticated_client()
+

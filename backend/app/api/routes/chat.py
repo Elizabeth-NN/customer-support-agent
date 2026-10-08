@@ -83,13 +83,38 @@ def chat(
                         "type": "token",
                         "content": (
                             "I don't have enough information "
-                            "to answer that question."
+                            "to answer that confidently."
+                        ),
+                    }
+                )
+                + "\n"
+            )
+
+            yield (
+                json.dumps(
+                    {
+                        "type": "escalation",
+                        "required": True,
+                        "reason": (
+                            "The available business knowledge "
+                            "does not contain enough information "
+                            "to answer confidently."
                         ),
                     }
                 )
                 + "\n"
             )
         else:
+            yield (
+                json.dumps(
+                    {
+                        "type": "escalation",
+                        "required": False,
+                    }
+                )
+                + "\n"
+            )
+
             for chunk in generate_answer_stream(
                 chat_request.question,
                 business_id=business_id,

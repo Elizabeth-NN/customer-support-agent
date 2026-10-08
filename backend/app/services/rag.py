@@ -5,6 +5,9 @@ from app.services.llm import generate_text, generate_text_stream
 from app.services.retrieval import retrieve_relevant_chunks
 
 
+RAG_CONFIDENCE_DISTANCE_THRESHOLD = 0.55
+
+
 def _build_prompt(
     question: str,
     chunks: list[dict],
@@ -32,6 +35,17 @@ Customer question:
 Answer:"""
 
 
+def _has_confident_match(chunks: list[dict]) -> bool:
+    """Return whether the best retrieved chunk is sufficiently similar."""
+
+    if not chunks:
+        return False
+
+    best_distance = float(chunks[0]["distance"])
+
+    return best_distance <= RAG_CONFIDENCE_DISTANCE_THRESHOLD
+
+
 def retrieve_answer_context(
     question: str,
     business_id: UUID,
@@ -45,14 +59,6 @@ def retrieve_answer_context(
         limit=limit,
     )
 
-    if not chunks:
-        return None, []
-
-    prompt = _build_prompt(
-        question,
-        chunks,
-    )
-
     sources = [
         {
             "document_id": str(chunk["document_id"]),
@@ -62,9 +68,18 @@ def retrieve_answer_context(
             "chunk_id": str(chunk["id"]),
             "chunk_index": chunk["chunk_index"],
             "distance": float(chunk["distance"]),
+            "content": chunk["content"],
         }
         for chunk in chunks
     ]
+
+    if not _has_confident_match(chunks):
+        return None, sources
+
+    prompt = _build_prompt(
+        question,
+        chunks,
+    )
 
     return prompt, sources
 
