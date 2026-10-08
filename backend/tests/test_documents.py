@@ -289,3 +289,56 @@ def test_upload_document_cleans_up_r2_when_ingestion_fails(
 
     finally:
         teardown_authenticated_client()
+
+def test_list_documents(monkeypatch):
+    setup_authenticated_client()
+
+    try:
+        def mock_get_business_id(clerk_user_id: str) -> UUID:
+            assert clerk_user_id == TEST_CLERK_USER_ID
+            return TEST_BUSINESS_ID
+
+        def mock_list_documents(business_id: UUID) -> list[dict]:
+            assert business_id == TEST_BUSINESS_ID
+
+            return [
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "business_id": str(TEST_BUSINESS_ID),
+                    "title": "Customer Support FAQ",
+                    "source_type": "document",
+                    "source_uri": "businesses/test/documents/faq.txt",
+                    "created_at": "2026-10-07T10:00:00Z",
+                    "updated_at": "2026-10-07T10:00:00Z",
+                }
+            ]
+
+        monkeypatch.setattr(
+            "app.api.routes.documents.get_business_id_for_user",
+            mock_get_business_id,
+        )
+
+        monkeypatch.setattr(
+            "app.api.routes.documents.list_knowledge_documents",
+            mock_list_documents,
+        )
+
+        response = client.get("/api/documents")
+
+        assert response.status_code == 200
+
+        data = response.json()
+
+        assert len(data) == 1
+        assert data[0]["title"] == "Customer Support FAQ"
+        assert data[0]["source_type"] == "document"
+
+    finally:
+        teardown_authenticated_client()
+
+
+def test_list_documents_requires_authentication():
+    response = client.get("/api/documents")
+
+    assert response.status_code == 401
+

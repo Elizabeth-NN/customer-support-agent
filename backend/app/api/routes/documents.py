@@ -15,7 +15,7 @@ from app.core.auth import require_auth
 from app.db.session import engine
 from app.services.ingestion.service import ingest_r2_document
 from app.services.storage import delete_file, upload_file
-
+from app.services.knowledge_documents import list_knowledge_documents
 
 router = APIRouter(
     prefix="/api/documents",
@@ -57,6 +57,21 @@ def get_business_id_for_user(clerk_user_id: str) -> UUID:
 
     return business_id
 
+@router.get("")
+def get_documents(
+    auth_payload: dict = Depends(require_auth),
+) -> list[dict]:
+    clerk_user_id = auth_payload.get("sub")
+
+    if not clerk_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticated user ID is missing.",
+        )
+
+    business_id = get_business_id_for_user(clerk_user_id)
+
+    return list_knowledge_documents(business_id)
 
 @router.post(
     "",
