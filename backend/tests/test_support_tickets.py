@@ -217,3 +217,110 @@ def test_create_support_ticket_rejects_empty_reason():
 
     finally:
         teardown_authenticated_client()
+
+def test_get_support_ticket(monkeypatch):
+    setup_authenticated_client()
+
+    try:
+        ticket_id = UUID(
+            "33333333-3333-3333-3333-333333333333"
+        )
+
+        def mock_get_business_id(clerk_user_id: str) -> UUID:
+            assert clerk_user_id == TEST_CLERK_USER_ID
+            return TEST_BUSINESS_ID
+
+        monkeypatch.setattr(
+            "app.api.routes.support_tickets.get_business_id_for_user",
+            mock_get_business_id,
+        )
+
+        def mock_get_ticket(
+            business_id: UUID,
+            ticket_id: UUID,
+        ):
+            assert business_id == TEST_BUSINESS_ID
+            assert ticket_id == UUID(
+                "33333333-3333-3333-3333-333333333333"
+            )
+
+            return {
+                "id": str(ticket_id),
+                "business_id": str(TEST_BUSINESS_ID),
+                "customer_question": (
+                    "Can I change my delivery address?"
+                ),
+                "escalation_reason": (
+                    "The knowledge base does not contain "
+                    "enough information."
+                ),
+                "status": "open",
+            }
+
+        monkeypatch.setattr(
+            "app.api.routes.support_tickets.get_support_ticket",
+            mock_get_ticket,
+        )
+
+        response = client.get(
+            "/api/support-tickets/"
+            "33333333-3333-3333-3333-333333333333"
+        )
+
+        assert response.status_code == 200
+
+        data = response.json()
+
+        assert data["id"] == (
+            "33333333-3333-3333-3333-333333333333"
+        )
+        assert data["business_id"] == str(TEST_BUSINESS_ID)
+        assert data["customer_question"] == (
+            "Can I change my delivery address?"
+        )
+        assert data["status"] == "open"
+
+    finally:
+        teardown_authenticated_client()
+
+
+def test_get_support_ticket_not_found(monkeypatch):
+    setup_authenticated_client()
+
+    try:
+        ticket_id = UUID(
+            "44444444-4444-4444-4444-444444444444"
+        )
+
+        monkeypatch.setattr(
+            "app.api.routes.support_tickets.get_business_id_for_user",
+            lambda clerk_user_id: TEST_BUSINESS_ID,
+        )
+
+        monkeypatch.setattr(
+            "app.api.routes.support_tickets.get_support_ticket",
+            lambda business_id, ticket_id: None,
+        )
+
+        response = client.get(
+            "/api/support-tickets/"
+            "44444444-4444-4444-4444-444444444444"
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == (
+            "Support ticket not found."
+        )
+
+    finally:
+        teardown_authenticated_client()
+
+
+def test_get_support_ticket_requires_authentication():
+    response = client.get(
+        "/api/support-tickets/"
+        "33333333-3333-3333-3333-333333333333"
+    )
+
+    assert response.status_code in {401, 403}
+

@@ -11,6 +11,7 @@ from app.schemas.support_ticket import (
 )
 from app.services.support_tickets import (
     create_support_ticket,
+    get_support_ticket,
     list_support_tickets,
 )
 
@@ -64,6 +65,37 @@ def list_tickets(
     return list_support_tickets(
         business_id=business_id,
     )
+
+@router.get(
+    "/{ticket_id}",
+    response_model=SupportTicketResponse,
+)
+def get_ticket(
+    ticket_id: UUID,
+    auth_payload: dict = Depends(require_auth),
+) -> dict:
+    clerk_user_id = auth_payload.get("sub")
+
+    if not clerk_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticated user ID is missing.",
+        )
+
+    business_id = get_business_id_for_user(clerk_user_id)
+
+    ticket = get_support_ticket(
+        business_id=business_id,
+        ticket_id=ticket_id,
+    )
+
+    if ticket is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Support ticket not found.",
+        )
+
+    return ticket
 
 @router.post(
     "",

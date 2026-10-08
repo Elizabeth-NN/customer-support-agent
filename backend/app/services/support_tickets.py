@@ -60,3 +60,32 @@ def list_support_tickets(
         rows = conn.execute(statement).mappings().all()
 
     return [dict(row) for row in rows]
+
+def get_support_ticket(
+    business_id: UUID,
+    ticket_id: UUID,
+) -> dict | None:
+    """Return a single support ticket belonging to a business."""
+
+    statement = (
+        select(
+            SupportTicket.id,
+            SupportTicket.business_id,
+            SupportTicket.customer_question,
+            SupportTicket.escalation_reason,
+            SupportTicket.status,
+        )
+        .where(
+            SupportTicket.id == ticket_id,
+            SupportTicket.business_id == business_id,
+        )
+    )
+
+    with engine.connect() as conn:
+        row = conn.execute(statement).mappings().one_or_none()
+
+    if row is None:
+        return None
+
+    return dict(row)
+
