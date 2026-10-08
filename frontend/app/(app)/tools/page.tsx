@@ -15,13 +15,12 @@ type OrderResult = {
   status: string;
   total_amount: string | number;
   currency: string;
-  customer: {
-    id: string;
-    name: string;
-    email: string;
-    phone: string | null;
-  };
   created_at: string;
+  updated_at: string;
+  customer_id: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string | null;
 };
 
 type CustomerResult = {
@@ -283,7 +282,7 @@ export default function ToolsPage() {
               <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-xs text-stone-400">Customer</p>
-                  <p className="mt-1 font-medium">{order.customer.name}</p>
+                  <p className="mt-1 font-medium">{order.customer_name}</p>
                 </div>
 
                 <div>
@@ -295,7 +294,11 @@ export default function ToolsPage() {
               </div>
 
               <div className="mt-3 text-xs text-stone-500">
-                {order.customer.email}
+                {order.customer_email}
+              </div>
+
+              <div className="mt-3 text-xs text-stone-500">
+                {order.customer_phone}
               </div>
             </div>
           )}

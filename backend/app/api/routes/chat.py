@@ -10,10 +10,8 @@ from app.core.auth import require_auth
 from app.core.rate_limit import limiter
 from app.db.session import engine
 from app.schemas.chat import ChatRequest
-from app.services.rag import (
-    generate_answer_stream,
-    retrieve_answer_context,
-)
+from app.services.llm import generate_text_with_tools
+from app.services.rag import retrieve_answer_context
 from app.services.support_tickets import create_support_ticket
 
 
@@ -42,6 +40,63 @@ def get_business_id_for_user(clerk_user_id: str) -> UUID:
         )
 
     return business_id
+
+
+def build_agent_prompt(
+    question: str,
+    prompt: str | None,
+) -> str:
+    """Build the prompt Gemini uses for RAG and business tools."""
+
+    if prompt:
+        return f"""
+You are a helpful customer support agent.
+
+You have access to business knowledge and secure business tools.
+
+Use the business knowledge below to answer the customer's question when
+it contains the required information.
+
+If the customer is asking about a specific order, customer, or other
+business record, use the appropriate business tool to retrieve the
+information instead of guessing.
+
+Never invent business information.
+
+If the available knowledge and business tools do not provide enough
+information to answer the question, say that you don't have enough
+information.
+
+Business knowledge:
+{prompt}
+
+Customer question:
+{question}
+
+Answer the customer directly and concisely.
+""".strip()
+
+    return f"""
+You are a helpful customer support agent.
+
+You have access to secure business tools.
+
+If the customer is asking about a specific order, customer, or other
+business record, use the appropriate business tool to retrieve the
+information.
+
+Never invent business information.
+
+If a business tool can answer the question, use it.
+
+If no available business tool can answer the question, say that you
+don't have enough information.
+
+Customer question:
+{question}
+
+Answer the customer directly and concisely.
+""".strip()
 
 
 @router.post("")
@@ -77,11 +132,20 @@ def chat(
             + "\n"
         )
 
-        if not confident:
+        agent_prompt = build_agent_prompt(
+            question=chat_request.question,
+            prompt=prompt if confident else None,
+        )
+
+        try:
+            answer = generate_text_with_tools(
+                agent_prompt,
+                business_id=business_id,
+            )
+        except Exception as exc:
             escalation_reason = (
-                "The available business knowledge "
-                "does not contain enough information "
-                "to answer confidently."
+                "The support agent could not retrieve enough information "
+                "to answer the question."
             )
 
             ticket = create_support_ticket(
@@ -95,9 +159,52 @@ def chat(
                     {
                         "type": "token",
                         "content": (
-                            "I don't have enough information "
-                            "to answer that question."
+                            "I’m unable to retrieve enough information "
+                            "to answer that right now."
                         ),
+                    }
+                )
+                + "\n"
+            )
+
+            yield (
+                json.dumps(
+                    {
+                        "type": "escalation",
+                        "required": True,
+                        "reason": escalation_reason,
+                        "ticket_id": str(ticket["id"]),
+                    }
+                )
+                + "\n"
+            )
+
+            yield json.dumps({"type": "done"}) + "\n"
+            return
+
+        answer_indicates_insufficient_information = (
+            "don't have enough information" in answer.lower()
+            or "do not have enough information" in answer.lower()
+            or "i don't have enough information" in answer.lower()
+        )
+
+        if not confident and answer_indicates_insufficient_information:
+            escalation_reason = (
+                "The available business knowledge and business tools "
+                "do not contain enough information to answer confidently."
+            )
+
+            ticket = create_support_ticket(
+                business_id=business_id,
+                customer_question=chat_request.question,
+                escalation_reason=escalation_reason,
+            )
+
+            yield (
+                json.dumps(
+                    {
+                        "type": "token",
+                        "content": answer,
                     }
                 )
                 + "\n"
@@ -125,19 +232,15 @@ def chat(
                 + "\n"
             )
 
-            for chunk in generate_answer_stream(
-                chat_request.question,
-                business_id=business_id,
-            ):
-                yield (
-                    json.dumps(
-                        {
-                            "type": "token",
-                            "content": chunk,
-                        }
-                    )
-                    + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "type": "token",
+                        "content": answer,
+                    }
                 )
+                + "\n"
+            )
 
         yield json.dumps({"type": "done"}) + "\n"
 

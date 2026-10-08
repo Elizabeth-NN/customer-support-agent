@@ -64,17 +64,18 @@ def test_chat_endpoint(monkeypatch):
                 True,
             )
 
-        def mock_generate_answer_stream(
-            question: str,
+        def mock_generate_text_with_tools(
+            prompt: str,
             business_id: UUID,
-            limit: int = 5,
         ):
-            assert question == "When is customer support available?"
+            assert "When is customer support available?" in prompt
             assert business_id == TEST_BUSINESS_ID
 
-            yield "Customer support is available "
-            yield "from Monday to Friday, "
-            yield "8 AM to 5 PM."
+            return (
+                "Customer support is available "
+                "from Monday to Friday, "
+                "8 AM to 5 PM."
+            )
 
         monkeypatch.setattr(
             "app.api.routes.chat.retrieve_answer_context",
@@ -82,8 +83,8 @@ def test_chat_endpoint(monkeypatch):
         )
 
         monkeypatch.setattr(
-            "app.api.routes.chat.generate_answer_stream",
-            mock_generate_answer_stream,
+            "app.api.routes.chat.generate_text_with_tools",
+            mock_generate_text_with_tools,
         )
 
         response = client.post(
@@ -178,8 +179,8 @@ def test_chat_creates_support_ticket_on_low_confidence(monkeypatch):
             )
             assert escalation_reason == (
                 "The available business knowledge "
-                "does not contain enough information "
-                "to answer confidently."
+                "and business tools do not contain "
+                "enough information to answer confidently."
             )
 
             return {
@@ -190,14 +191,13 @@ def test_chat_creates_support_ticket_on_low_confidence(monkeypatch):
                 "status": "open",
             }
 
-        def fail_generate_answer_stream(
-            question: str,
+        def mock_generate_text_with_tools(
+            prompt: str,
             business_id: UUID,
-            limit: int = 5,
         ):
-            raise AssertionError(
-                "LLM should not be called for low-confidence retrieval."
-            )
+            assert business_id == TEST_BUSINESS_ID
+
+            return "I don't have enough information to answer that question."
 
         monkeypatch.setattr(
             "app.api.routes.chat.retrieve_answer_context",
@@ -210,8 +210,8 @@ def test_chat_creates_support_ticket_on_low_confidence(monkeypatch):
         )
 
         monkeypatch.setattr(
-            "app.api.routes.chat.generate_answer_stream",
-            fail_generate_answer_stream,
+            "app.api.routes.chat.generate_text_with_tools",
+            mock_generate_text_with_tools,
         )
 
         response = client.post(
@@ -264,8 +264,8 @@ def test_chat_creates_support_ticket_on_low_confidence(monkeypatch):
         assert escalation["required"] is True
         assert escalation["reason"] == (
             "The available business knowledge "
-            "does not contain enough information "
-            "to answer confidently."
+            "and business tools do not contain "
+            "enough information to answer confidently."
         )
         assert escalation["ticket_id"] == (
             "33333333-3333-3333-3333-333333333333"
@@ -352,16 +352,18 @@ def test_chat_rate_limit(monkeypatch):
                 True,
             )
 
-        def mock_generate_answer_stream(
-            question: str,
+        def mock_generate_text_with_tools(
+            prompt: str,
             business_id: UUID,
-            limit: int = 5,
         ):
+            assert "When is customer support available?" in prompt
             assert business_id == TEST_BUSINESS_ID
 
-            yield "Customer support is available "
-            yield "from Monday to Friday, "
-            yield "8 AM to 5 PM."
+            return (
+                "Customer support is available "
+                "from Monday to Friday, "
+                "8 AM to 5 PM."
+            )
 
         monkeypatch.setattr(
             "app.api.routes.chat.retrieve_answer_context",
@@ -369,8 +371,8 @@ def test_chat_rate_limit(monkeypatch):
         )
 
         monkeypatch.setattr(
-            "app.api.routes.chat.generate_answer_stream",
-            mock_generate_answer_stream,
+            "app.api.routes.chat.generate_text_with_tools",
+            mock_generate_text_with_tools,
         )
 
         limiter._storage.reset()
