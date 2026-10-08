@@ -1,4 +1,4 @@
-import json
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi.testclient import TestClient
@@ -12,6 +12,25 @@ client = TestClient(app)
 TEST_CLERK_USER_ID = "user_3KJyYGDtv0ysYHixbueDC8VHmLb"
 TEST_BUSINESS_ID = UUID("cf1a1025-66cd-4552-b7fd-dadebb0beebe")
 
+TEST_CREATED_AT = datetime(
+    2026,
+    10,
+    1,
+    10,
+    0,
+    0,
+    tzinfo=timezone.utc,
+)
+
+TEST_UPDATED_AT = datetime(
+    2026,
+    10,
+    1,
+    10,
+    30,
+    0,
+    tzinfo=timezone.utc,
+)
 
 def fake_authenticated_user() -> dict:
     return {
@@ -59,6 +78,8 @@ def test_create_support_ticket(monkeypatch):
                 "customer_question": customer_question,
                 "escalation_reason": escalation_reason,
                 "status": "open",
+                "created_at": TEST_CREATED_AT,
+                "updated_at": TEST_UPDATED_AT,
             }
 
         monkeypatch.setattr(
@@ -125,6 +146,8 @@ def test_list_support_tickets(monkeypatch):
                         "enough information."
                     ),
                     "status": "open",
+                    "created_at": TEST_CREATED_AT,
+                    "updated_at": TEST_UPDATED_AT,
                 },
                 {
                     "id": "44444444-4444-4444-4444-444444444444",
@@ -136,6 +159,8 @@ def test_list_support_tickets(monkeypatch):
                         "No order status information was available."
                     ),
                     "status": "open",
+                    "created_at": TEST_CREATED_AT,
+                    "updated_at": TEST_UPDATED_AT,
                 },
             ]
 
@@ -255,6 +280,8 @@ def test_get_support_ticket(monkeypatch):
                     "enough information."
                 ),
                 "status": "open",
+                "created_at": TEST_CREATED_AT,
+                "updated_at": TEST_UPDATED_AT,
             }
 
         monkeypatch.setattr(
@@ -363,6 +390,8 @@ def test_update_support_ticket_status(monkeypatch):
                     "enough information."
                 ),
                 "status": "in_progress",
+                "created_at": TEST_CREATED_AT,
+                "updated_at": TEST_UPDATED_AT,
             }
 
         monkeypatch.setattr(

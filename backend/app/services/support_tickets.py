@@ -30,6 +30,8 @@ def create_support_ticket(
             SupportTicket.customer_question,
             SupportTicket.escalation_reason,
             SupportTicket.status,
+            SupportTicket.created_at,
+            SupportTicket.updated_at,
         )
     )
 
@@ -51,6 +53,8 @@ def list_support_tickets(
             SupportTicket.customer_question,
             SupportTicket.escalation_reason,
             SupportTicket.status,
+            SupportTicket.created_at,
+            SupportTicket.updated_at,
         )
         .where(SupportTicket.business_id == business_id)
         .order_by(SupportTicket.created_at.desc())
@@ -74,6 +78,8 @@ def get_support_ticket(
             SupportTicket.customer_question,
             SupportTicket.escalation_reason,
             SupportTicket.status,
+            SupportTicket.created_at,
+            SupportTicket.updated_at,
         )
         .where(
             SupportTicket.id == ticket_id,
@@ -109,6 +115,8 @@ def update_support_ticket_status(
             SupportTicket.customer_question,
             SupportTicket.escalation_reason,
             SupportTicket.status,
+            SupportTicket.created_at,
+            SupportTicket.updated_at,
         )
     )
 
