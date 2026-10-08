@@ -146,6 +146,37 @@ export default function EscalationsPage() {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+    async function fetchTickets(): Promise<SupportTicket[]> {
+    const response = await fetch("/api/backend/support-tickets", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      let message = "Unable to load escalations.";
+
+      try {
+        const data = await response.json();
+
+        if (typeof data?.detail === "string") {
+          message = data.detail;
+        }
+      } catch {
+        // Keep the default error message.
+      }
+
+      throw new Error(message);
+    }
+
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error("The server returned an invalid escalation list.");
+    }
+
+    return data as SupportTicket[];
+  }
+
   async function loadTickets(showRefreshState = false) {
     if (showRefreshState) {
       setRefreshing(true);
@@ -156,33 +187,7 @@ export default function EscalationsPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/backend/support-tickets", {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        let message = "Unable to load escalations.";
-
-        try {
-          const data = await response.json();
-
-          if (typeof data?.detail === "string") {
-            message = data.detail;
-          }
-        } catch {
-          // Keep the default error message.
-        }
-
-        throw new Error(message);
-      }
-
-      const data = await response.json();
-
-      if (!Array.isArray(data)) {
-        throw new Error("The server returned an invalid escalation list.");
-      }
-
+      const data = await fetchTickets();
       setTickets(data);
     } catch (err) {
       setError(
@@ -197,7 +202,33 @@ export default function EscalationsPage() {
   }
 
   useEffect(() => {
-    void loadTickets();
+    let cancelled = false;
+
+    async function loadInitialTickets() {
+      try {
+        const data = await fetchTickets();
+
+        if (!cancelled) {
+          setTickets(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load escalations.",
+          );
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadInitialTickets();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function updateStatus(
