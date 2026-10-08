@@ -4,6 +4,8 @@ from app.services.rag import generate_answer
 
 
 TEST_BUSINESS_ID = UUID("cf1a1025-66cd-4552-b7fd-dadebb0beebe")
+TEST_DOCUMENT_ID = UUID("11111111-1111-1111-1111-111111111111")
+TEST_CHUNK_ID = UUID("22222222-2222-2222-2222-222222222222")
 
 
 def test_generate_answer_from_knowledge(monkeypatch):
@@ -14,13 +16,21 @@ def test_generate_answer_from_knowledge(monkeypatch):
     ) -> list[dict]:
         assert question == "When is customer support available?"
         assert business_id == TEST_BUSINESS_ID
+        assert limit == 5
 
         return [
             {
+                "id": TEST_CHUNK_ID,
+                "document_id": TEST_DOCUMENT_ID,
                 "content": (
                     "Customer support hours are Monday to Friday, "
                     "8 AM to 5 PM."
-                )
+                ),
+                "chunk_index": 0,
+                "document_title": "Customer Support FAQ",
+                "source_type": "document",
+                "source_uri": None,
+                "distance": 0.12,
             }
         ]
 
@@ -48,8 +58,7 @@ def test_generate_answer_from_knowledge(monkeypatch):
         business_id=TEST_BUSINESS_ID,
     )
 
-    assert answer
-    assert "Monday" in answer
-    assert "Friday" in answer
-    assert "8 AM" in answer
-    assert "5 PM" in answer
+    assert answer == (
+        "Customer support is available from Monday to Friday, "
+        "8 AM to 5 PM."
+    )

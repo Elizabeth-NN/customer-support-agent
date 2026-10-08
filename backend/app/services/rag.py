@@ -7,19 +7,9 @@ from app.services.retrieval import retrieve_relevant_chunks
 
 def _build_prompt(
     question: str,
-    business_id: UUID,
-    limit: int = 5,
-) -> str | None:
-    """Build a grounded prompt using the business's knowledge."""
-
-    chunks = retrieve_relevant_chunks(
-        question,
-        business_id=business_id,
-        limit=limit,
-    )
-
-    if not chunks:
-        return None
+    chunks: list[dict],
+) -> str:
+    """Build a grounded prompt from retrieved knowledge."""
 
     context = "\n\n".join(
         f"Knowledge source {index + 1}:\n{chunk['content']}"
@@ -42,6 +32,43 @@ Customer question:
 Answer:"""
 
 
+def retrieve_answer_context(
+    question: str,
+    business_id: UUID,
+    limit: int = 5,
+) -> tuple[str | None, list[dict]]:
+    """Retrieve knowledge and build the grounded prompt."""
+
+    chunks = retrieve_relevant_chunks(
+        question,
+        business_id=business_id,
+        limit=limit,
+    )
+
+    if not chunks:
+        return None, []
+
+    prompt = _build_prompt(
+        question,
+        chunks,
+    )
+
+    sources = [
+        {
+            "document_id": str(chunk["document_id"]),
+            "document_title": chunk["document_title"],
+            "source_type": chunk["source_type"],
+            "source_uri": chunk["source_uri"],
+            "chunk_id": str(chunk["id"]),
+            "chunk_index": chunk["chunk_index"],
+            "distance": float(chunk["distance"]),
+        }
+        for chunk in chunks
+    ]
+
+    return prompt, sources
+
+
 def generate_answer(
     question: str,
     business_id: UUID,
@@ -49,7 +76,7 @@ def generate_answer(
 ) -> str:
     """Generate a complete grounded answer."""
 
-    prompt = _build_prompt(
+    prompt, _ = retrieve_answer_context(
         question,
         business_id=business_id,
         limit=limit,
@@ -68,7 +95,7 @@ def generate_answer_stream(
 ) -> Iterator[str]:
     """Generate a grounded answer as a stream."""
 
-    prompt = _build_prompt(
+    prompt, _ = retrieve_answer_context(
         question,
         business_id=business_id,
         limit=limit,

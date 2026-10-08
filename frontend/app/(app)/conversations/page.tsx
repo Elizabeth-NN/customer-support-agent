@@ -2,10 +2,34 @@
 
 import { FormEvent, useState } from "react";
 
+type Citation = {
+document_id: string;
+document_title: string;
+source_type: string;
+source_uri: string | null;
+chunk_id: string;
+chunk_index: number;
+distance: number;
+};
+
 type Message = {
 id: number;
 role: "user" | "assistant";
 content: string;
+citations?: Citation[];
+};
+
+type StreamEvent =
+| {
+type: "sources";
+sources: Citation[];
+}
+| {
+type: "token";
+content: string;
+}
+| {
+type: "done";
 };
 
 export default function ConversationsPage() {
@@ -52,12 +76,13 @@ setMessages((current) => [
     id: assistantMessageId,
     role: "assistant",
     content: "",
+    citations: [],
   },
 ]);
 
-setStreamingMessageId(assistantMessageId);
 setQuestion("");
 setIsLoading(true);
+setStreamingMessageId(assistantMessageId);
 
 try {
   const response = await fetch("/api/backend/chat", {
@@ -90,7 +115,7 @@ try {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
 
-  let assistantContent = "";
+  let buffer = "";
 
   while (true) {
     const { value, done } = await reader.read();
@@ -99,51 +124,101 @@ try {
       break;
     }
 
-    const chunk = decoder.decode(value, { stream: true });
+    buffer += decoder.decode(value, { stream: true });
 
-    assistantContent += chunk;
+    const lines = buffer.split("\n");
 
-    setMessages((current) =>
-      current.map((message) =>
-        message.id === assistantMessageId
-          ? {
-              ...message,
-              content: assistantContent,
-            }
-          : message,
-      ),
-    );
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.trim()) {
+        continue;
+      }
+
+      let event: StreamEvent;
+
+      try {
+        event = JSON.parse(line) as StreamEvent;
+      } catch {
+        continue;
+      }
+
+      if (event.type === "sources") {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  citations: event.sources,
+                }
+              : message,
+          ),
+        );
+      }
+
+      if (event.type === "token") {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  content: message.content + event.content,
+                }
+              : message,
+          ),
+        );
+      }
+    }
   }
 
-  const finalChunk = decoder.decode();
+  buffer += decoder.decode();
 
-  if (finalChunk) {
-    assistantContent += finalChunk;
+  if (buffer.trim()) {
+    try {
+      const event = JSON.parse(buffer) as StreamEvent;
 
-    setMessages((current) =>
-      current.map((message) =>
-        message.id === assistantMessageId
-          ? {
-              ...message,
-              content: assistantContent,
-            }
-          : message,
-      ),
-    );
+      if (event.type === "sources") {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  citations: event.sources,
+                }
+              : message,
+          ),
+        );
+      }
+
+      if (event.type === "token") {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  content: message.content + event.content,
+                }
+              : message,
+          ),
+        );
+      }
+    } catch {
+      // Ignore incomplete or invalid trailing data.
+    }
   }
 } catch (err) {
-  setMessages((current) =>
-    current.filter((message) => message.id !== assistantMessageId),
-  );
-
   setError(
     err instanceof Error
       ? err.message
       : "Something went wrong while contacting the assistant.",
   );
+
+  setMessages((current) =>
+    current.filter((message) => message.id !== assistantMessageId),
+  );
 } finally {
-  setStreamingMessageId(null);
   setIsLoading(false);
+  setStreamingMessageId(null);
 }
 
 
@@ -151,6 +226,7 @@ try {
 
 return ( <div className="flex min-h-[calc(100vh-1px)] flex-col"> <header className="border-b border-black/[0.06] px-6 py-6 md:px-8"> <div className="mx-auto max-w-5xl"> <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400">
 AI Support </p>
+
 
       <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">
         Conversations
@@ -172,21 +248,59 @@ AI Support </p>
               message.role === "user" ? "justify-end" : "justify-start"
             }`}
           >
-            <div
-              className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 md:max-w-[70%] ${
-                message.role === "user"
-                  ? "bg-black text-white"
-                  : "bg-[#F2F0EB] text-[#141414]"
-              }`}
-            >
-              {message.content}
+            <div className="max-w-[85%] md:max-w-[70%]">
+              <div
+                className={`rounded-2xl px-4 py-3 text-sm leading-6 ${
+                  message.role === "user"
+                    ? "bg-black text-white"
+                    : "bg-[#F2F0EB] text-[#141414]"
+                }`}
+              >
+                {message.content}
+
+                {message.role === "assistant" &&
+                  message.id === streamingMessageId && (
+                    <span className="ml-1 inline-block animate-pulse">
+                      ▍
+                    </span>
+                  )}
+              </div>
 
               {message.role === "assistant" &&
-                isLoading &&
-                message.id === streamingMessageId && (
-                  <span className="ml-1 inline-block animate-pulse">
-                    ▍
-                  </span>
+                message.citations &&
+                message.citations.length > 0 && (
+                  <div className="mt-3 rounded-xl border border-stone-200 bg-white p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">
+                      Sources
+                    </p>
+
+                    <div className="space-y-2">
+                      {message.citations.map((citation, index) => (
+                        <div
+                          key={citation.chunk_id}
+                          className="rounded-lg border border-stone-100 bg-stone-50 px-3 py-2"
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-stone-200 text-[10px] font-semibold text-stone-600">
+                              {index + 1}
+                            </span>
+
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-stone-800">
+                                {citation.document_title}
+                              </p>
+
+                              <p className="mt-0.5 text-[11px] text-stone-400">
+                                {citation.source_type}
+                                {" · "}
+                                Chunk {citation.chunk_index + 1}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
             </div>
           </div>

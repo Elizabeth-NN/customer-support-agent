@@ -1,3 +1,4 @@
+import json
 from collections.abc import Iterator
 from uuid import UUID
 
@@ -9,7 +10,10 @@ from app.core.auth import require_auth
 from app.core.rate_limit import limiter
 from app.db.session import engine
 from app.schemas.chat import ChatRequest
-from app.services.rag import generate_answer_stream
+from app.services.rag import (
+    generate_answer_stream,
+    retrieve_answer_context,
+)
 
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -57,14 +61,54 @@ def chat(
     business_id = get_business_id_for_user(clerk_user_id)
 
     def stream() -> Iterator[str]:
-        yield from generate_answer_stream(
+        prompt, sources = retrieve_answer_context(
             chat_request.question,
             business_id=business_id,
         )
 
+        yield (
+            json.dumps(
+                {
+                    "type": "sources",
+                    "sources": sources,
+                }
+            )
+            + "\n"
+        )
+
+        if prompt is None:
+            yield (
+                json.dumps(
+                    {
+                        "type": "token",
+                        "content": (
+                            "I don't have enough information "
+                            "to answer that question."
+                        ),
+                    }
+                )
+                + "\n"
+            )
+        else:
+            for chunk in generate_answer_stream(
+                chat_request.question,
+                business_id=business_id,
+            ):
+                yield (
+                    json.dumps(
+                        {
+                            "type": "token",
+                            "content": chunk,
+                        }
+                    )
+                    + "\n"
+                )
+
+        yield json.dumps({"type": "done"}) + "\n"
+
     return StreamingResponse(
         stream(),
-        media_type="text/plain; charset=utf-8",
+        media_type="application/x-ndjson",
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",

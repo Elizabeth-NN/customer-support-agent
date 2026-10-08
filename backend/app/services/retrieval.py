@@ -11,7 +11,7 @@ def retrieve_relevant_chunks(
     business_id: UUID,
     limit: int = 5,
 ) -> list[dict]:
-    """Retrieve relevant knowledge chunks belonging only to a business."""
+    """Retrieve relevant knowledge chunks and their source metadata."""
 
     embedding = generate_embedding(question)
 
@@ -24,6 +24,9 @@ def retrieve_relevant_chunks(
                     dc.document_id,
                     dc.content,
                     dc.chunk_index,
+                    kd.title AS document_title,
+                    kd.source_type,
+                    kd.source_uri,
                     dc.embedding <=> CAST(:embedding AS vector) AS distance
                 FROM document_chunks dc
                 INNER JOIN knowledge_documents kd

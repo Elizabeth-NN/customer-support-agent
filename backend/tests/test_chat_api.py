@@ -1,3 +1,4 @@
+import json
 from uuid import UUID
 
 from fastapi.testclient import TestClient
@@ -54,16 +55,44 @@ def test_chat_endpoint(monkeypatch):
         )
 
         assert response.status_code == 200
-        assert response.headers["content-type"].startswith("text/plain")
-        assert response.text == (
+        assert response.headers["content-type"].startswith(
+            "application/x-ndjson"
+        )
+
+        lines = [
+            line
+            for line in response.text.splitlines()
+            if line.strip()
+        ]
+
+        assert len(lines) >= 3
+
+        events = [json.loads(line) for line in lines]
+
+        assert events[0]["type"] == "sources"
+        assert len(events[0]["sources"]) > 0
+
+        token_events = [
+            event
+            for event in events
+            if event["type"] == "token"
+        ]
+
+        answer = "".join(
+            event["content"]
+            for event in token_events
+        )
+
+        assert answer == (
             "Customer support is available "
             "from Monday to Friday, "
             "8 AM to 5 PM."
         )
 
+        assert events[-1]["type"] == "done"
+
     finally:
         teardown_authenticated_client()
-
 
 def test_chat_rejects_empty_question():
     setup_authenticated_client()
