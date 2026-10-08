@@ -1,3 +1,4 @@
+
 import uuid
 from datetime import datetime
 
@@ -50,3 +51,10 @@ class Business(Base):
         back_populates="business",
         cascade="all, delete-orphan",
     )
+
+    support_tickets = relationship(
+        "SupportTicket",
+        back_populates="business",
+        cascade="all, delete-orphan",
+    )
+
