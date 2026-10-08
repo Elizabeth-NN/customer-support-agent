@@ -14,6 +14,10 @@ from sqlalchemy import text
 from app.core.auth import require_auth
 from app.db.session import engine
 from app.services.ingestion.service import ingest_r2_document
+from app.services.knowledge_documents import (
+    delete_knowledge_document,
+    list_knowledge_documents,
+)
 from app.services.storage import delete_file, upload_file
 from app.services.knowledge_documents import list_knowledge_documents
 
@@ -72,6 +76,44 @@ def get_documents(
     business_id = get_business_id_for_user(clerk_user_id)
 
     return list_knowledge_documents(business_id)
+
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_document(
+    document_id: UUID,
+    auth_payload: dict = Depends(require_auth),
+) -> None:
+    clerk_user_id = auth_payload.get("sub")
+
+    if not clerk_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticated user ID is missing.",
+        )
+
+    business_id = get_business_id_for_user(clerk_user_id)
+
+    source_uri = delete_knowledge_document(
+        business_id=business_id,
+        document_id=document_id,
+    )
+
+    if source_uri is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found.",
+        )
+
+    if source_uri:
+        try:
+            delete_file(source_uri)
+        except Exception:
+            # The database record has already been removed.
+            # Do not turn a successful database deletion into a
+            # failed API response because R2 cleanup failed.
+            pass
 
 @router.post(
     "",

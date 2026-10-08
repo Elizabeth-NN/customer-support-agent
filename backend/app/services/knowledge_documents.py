@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.db.session import engine
 from app.models.knowledge_document import KnowledgeDocument
+from app.services.storage import delete_file
 
 
 def list_knowledge_documents(
@@ -29,3 +30,37 @@ def list_knowledge_documents(
         rows = conn.execute(statement).mappings().all()
 
     return [dict(row) for row in rows]
+
+
+def delete_knowledge_document(
+    business_id: UUID,
+    document_id: UUID,
+) -> str | None:
+    """Delete a document and return its storage object key, if present."""
+
+    # Select only the column we need. With a Core connection, selecting the
+    # entity returns the first column (the id), not an ORM instance.
+    statement = select(KnowledgeDocument.source_uri).where(
+        KnowledgeDocument.id == document_id,
+        KnowledgeDocument.business_id == business_id,
+    )
+
+    with engine.begin() as conn:
+        row = conn.execute(statement).first()
+
+        if row is None:
+            raise ValueError("Document not found.")
+
+        source_uri = row.source_uri
+
+        conn.execute(
+            delete(KnowledgeDocument).where(
+                KnowledgeDocument.id == document_id,
+                KnowledgeDocument.business_id == business_id,
+            )
+        )
+
+    if source_uri:
+        delete_file(source_uri)
+
+    return source_uri

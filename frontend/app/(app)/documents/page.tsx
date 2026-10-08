@@ -6,6 +6,7 @@ import {
   ArrowUpTrayIcon,
   DocumentTextIcon,
   ExclamationCircleIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 
 type KnowledgeDocument = {
@@ -39,6 +40,7 @@ export default function DocumentsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [uploadResult, setUploadResult] =
     useState<UploadResponse | null>(null);
   const [error, setError] = useState("");
@@ -222,6 +224,51 @@ export default function DocumentsPage() {
       );
     } finally {
       setUploading(false);
+    }
+  }
+
+    async function handleDelete(document: KnowledgeDocument) {
+    const confirmed = window.confirm(
+      `Remove "${document.title}" from the knowledge base?\n\nThis will also remove its knowledge chunks.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setUploadResult(null);
+    setDeletingId(document.id);
+
+    try {
+      const response = await fetch(
+        `/api/backend/documents/${document.id}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.detail || "Unable to remove document.",
+        );
+      }
+
+      setDocuments((currentDocuments) =>
+        currentDocuments.filter(
+          (currentDocument) => currentDocument.id !== document.id,
+        ),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to remove document.",
+      );
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -458,9 +505,7 @@ export default function DocumentsPage() {
 
                         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#888]">
                           <span>
-                            {formatSourceType(
-                              document.source_type,
-                            )}
+                            {formatSourceType(document.source_type)}
                           </span>
 
                           <span aria-hidden="true">·</span>
@@ -470,6 +515,21 @@ export default function DocumentsPage() {
                           </span>
                         </div>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(document)}
+                        disabled={deletingId === document.id}
+                        aria-label={`Remove ${document.title}`}
+                        title="Remove document"
+                        className="shrink-0 rounded-lg p-2 text-[#888] transition hover:bg-[#fce8e6] hover:text-[#d93025] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <TrashIcon
+                          className={`h-4 w-4 ${
+                            deletingId === document.id ? "animate-pulse" : ""
+                          }`}
+                        />
+                      </button>
                     </div>
 
                     {document.source_uri && (

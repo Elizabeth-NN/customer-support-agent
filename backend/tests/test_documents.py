@@ -342,3 +342,109 @@ def test_list_documents_requires_authentication():
 
     assert response.status_code == 401
 
+def test_delete_document(monkeypatch):
+    setup_authenticated_client()
+
+    try:
+        deleted_documents = []
+        deleted_files = []
+
+        def mock_get_business_id(clerk_user_id: str) -> UUID:
+            assert clerk_user_id == TEST_CLERK_USER_ID
+            return TEST_BUSINESS_ID
+
+        def mock_delete_knowledge_document(
+            business_id: UUID,
+            document_id: UUID,
+        ) -> str:
+            assert business_id == TEST_BUSINESS_ID
+            assert document_id == UUID(
+                "11111111-1111-1111-1111-111111111111"
+            )
+
+            deleted_documents.append(document_id)
+
+            return (
+                f"businesses/{TEST_BUSINESS_ID}/documents/"
+                "customer-support.txt"
+            )
+
+        def mock_delete_file(object_key: str) -> None:
+            deleted_files.append(object_key)
+
+        monkeypatch.setattr(
+            "app.api.routes.documents.get_business_id_for_user",
+            mock_get_business_id,
+        )
+
+        monkeypatch.setattr(
+            "app.api.routes.documents.delete_knowledge_document",
+            mock_delete_knowledge_document,
+        )
+
+        monkeypatch.setattr(
+            "app.api.routes.documents.delete_file",
+            mock_delete_file,
+        )
+
+        response = client.delete(
+            "/api/documents/"
+            "11111111-1111-1111-1111-111111111111"
+        )
+
+        assert response.status_code == 204
+        assert len(deleted_documents) == 1
+        assert len(deleted_files) == 1
+
+        assert deleted_files[0] == (
+            f"businesses/{TEST_BUSINESS_ID}/documents/"
+            "customer-support.txt"
+        )
+
+    finally:
+        teardown_authenticated_client()
+
+
+def test_delete_document_not_found(monkeypatch):
+    setup_authenticated_client()
+
+    try:
+        def mock_get_business_id(clerk_user_id: str) -> UUID:
+            return TEST_BUSINESS_ID
+
+        def mock_delete_knowledge_document(
+            business_id: UUID,
+            document_id: UUID,
+        ) -> None:
+            return None
+
+        monkeypatch.setattr(
+            "app.api.routes.documents.get_business_id_for_user",
+            mock_get_business_id,
+        )
+
+        monkeypatch.setattr(
+            "app.api.routes.documents.delete_knowledge_document",
+            mock_delete_knowledge_document,
+        )
+
+        response = client.delete(
+            "/api/documents/"
+            "22222222-2222-2222-2222-222222222222"
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Document not found."
+
+    finally:
+        teardown_authenticated_client()
+
+
+def test_delete_document_requires_authentication():
+    response = client.delete(
+        "/api/documents/"
+        "11111111-1111-1111-1111-111111111111"
+    )
+
+    assert response.status_code == 401
+
