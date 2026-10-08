@@ -9,7 +9,10 @@ from app.schemas.support_ticket import (
     SupportTicketCreate,
     SupportTicketResponse,
 )
-from app.services.support_tickets import create_support_ticket
+from app.services.support_tickets import (
+    create_support_ticket,
+    list_support_tickets,
+)
 
 
 router = APIRouter(
@@ -41,6 +44,26 @@ def get_business_id_for_user(clerk_user_id: str) -> UUID:
 
     return business_id
 
+@router.get(
+    "",
+    response_model=list[SupportTicketResponse],
+)
+def list_tickets(
+    auth_payload: dict = Depends(require_auth),
+) -> list[dict]:
+    clerk_user_id = auth_payload.get("sub")
+
+    if not clerk_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticated user ID is missing.",
+        )
+
+    business_id = get_business_id_for_user(clerk_user_id)
+
+    return list_support_tickets(
+        business_id=business_id,
+    )
 
 @router.post(
     "",

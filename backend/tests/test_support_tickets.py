@@ -95,6 +95,81 @@ def test_create_support_ticket(monkeypatch):
     finally:
         teardown_authenticated_client()
 
+def test_list_support_tickets(monkeypatch):
+    setup_authenticated_client()
+
+    try:
+        def mock_get_business_id(clerk_user_id: str) -> UUID:
+            assert clerk_user_id == TEST_CLERK_USER_ID
+            return TEST_BUSINESS_ID
+
+        monkeypatch.setattr(
+            "app.api.routes.support_tickets.get_business_id_for_user",
+            mock_get_business_id,
+        )
+
+        def mock_list_tickets(
+            business_id: UUID,
+        ):
+            assert business_id == TEST_BUSINESS_ID
+
+            return [
+                {
+                    "id": "33333333-3333-3333-3333-333333333333",
+                    "business_id": str(TEST_BUSINESS_ID),
+                    "customer_question": (
+                        "Can I change my delivery address?"
+                    ),
+                    "escalation_reason": (
+                        "The knowledge base does not contain "
+                        "enough information."
+                    ),
+                    "status": "open",
+                },
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "business_id": str(TEST_BUSINESS_ID),
+                    "customer_question": (
+                        "Where is my replacement order?"
+                    ),
+                    "escalation_reason": (
+                        "No order status information was available."
+                    ),
+                    "status": "open",
+                },
+            ]
+
+        monkeypatch.setattr(
+            "app.api.routes.support_tickets.list_support_tickets",
+            mock_list_tickets,
+        )
+
+        response = client.get("/api/support-tickets")
+
+        assert response.status_code == 200
+
+        data = response.json()
+
+        assert len(data) == 2
+
+        assert data[0]["id"] == (
+            "33333333-3333-3333-3333-333333333333"
+        )
+        assert data[0]["business_id"] == str(TEST_BUSINESS_ID)
+        assert data[0]["status"] == "open"
+
+        assert data[1]["id"] == (
+            "44444444-4444-4444-4444-444444444444"
+        )
+        assert data[1]["business_id"] == str(TEST_BUSINESS_ID)
+
+    finally:
+        teardown_authenticated_client()
+
+def test_list_support_tickets_requires_authentication():
+    response = client.get("/api/support-tickets")
+
+    assert response.status_code in {401, 403}
 
 def test_create_support_ticket_requires_authentication():
     response = client.post(
