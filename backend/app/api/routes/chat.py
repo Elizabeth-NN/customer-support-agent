@@ -14,6 +14,7 @@ from app.services.rag import (
     generate_answer_stream,
     retrieve_answer_context,
 )
+from app.services.support_tickets import create_support_ticket
 
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -61,7 +62,7 @@ def chat(
     business_id = get_business_id_for_user(clerk_user_id)
 
     def stream() -> Iterator[str]:
-        prompt, sources = retrieve_answer_context(
+        prompt, sources, confident = retrieve_answer_context(
             chat_request.question,
             business_id=business_id,
         )
@@ -76,14 +77,26 @@ def chat(
             + "\n"
         )
 
-        if prompt is None:
+        if not confident:
+            escalation_reason = (
+                "The available business knowledge "
+                "does not contain enough information "
+                "to answer confidently."
+            )
+
+            ticket = create_support_ticket(
+                business_id=business_id,
+                customer_question=chat_request.question,
+                escalation_reason=escalation_reason,
+            )
+
             yield (
                 json.dumps(
                     {
                         "type": "token",
                         "content": (
                             "I don't have enough information "
-                            "to answer that confidently."
+                            "to answer that question."
                         ),
                     }
                 )
@@ -95,11 +108,8 @@ def chat(
                     {
                         "type": "escalation",
                         "required": True,
-                        "reason": (
-                            "The available business knowledge "
-                            "does not contain enough information "
-                            "to answer confidently."
-                        ),
+                        "reason": escalation_reason,
+                        "ticket_id": str(ticket["id"]),
                     }
                 )
                 + "\n"

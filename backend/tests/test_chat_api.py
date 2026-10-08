@@ -61,6 +61,7 @@ def test_chat_endpoint(monkeypatch):
                         ),
                     }
                 ],
+                True,
             )
 
         def mock_generate_answer_stream(
@@ -148,6 +149,132 @@ def test_chat_endpoint(monkeypatch):
     finally:
         teardown_authenticated_client()
 
+def test_chat_creates_support_ticket_on_low_confidence(monkeypatch):
+    setup_authenticated_client()
+
+    try:
+        def mock_retrieve_answer_context(
+            question: str,
+            business_id: UUID,
+            limit: int = 5,
+        ):
+            assert question == "What is the status of my replacement order?"
+            assert business_id == TEST_BUSINESS_ID
+
+            return (
+                None,
+                [],
+                False,
+            )
+
+        def mock_create_support_ticket(
+            business_id: UUID,
+            customer_question: str,
+            escalation_reason: str,
+        ):
+            assert business_id == TEST_BUSINESS_ID
+            assert customer_question == (
+                "What is the status of my replacement order?"
+            )
+            assert escalation_reason == (
+                "The available business knowledge "
+                "does not contain enough information "
+                "to answer confidently."
+            )
+
+            return {
+                "id": UUID("33333333-3333-3333-3333-333333333333"),
+                "business_id": TEST_BUSINESS_ID,
+                "customer_question": customer_question,
+                "escalation_reason": escalation_reason,
+                "status": "open",
+            }
+
+        def fail_generate_answer_stream(
+            question: str,
+            business_id: UUID,
+            limit: int = 5,
+        ):
+            raise AssertionError(
+                "LLM should not be called for low-confidence retrieval."
+            )
+
+        monkeypatch.setattr(
+            "app.api.routes.chat.retrieve_answer_context",
+            mock_retrieve_answer_context,
+        )
+
+        monkeypatch.setattr(
+            "app.api.routes.chat.create_support_ticket",
+            mock_create_support_ticket,
+        )
+
+        monkeypatch.setattr(
+            "app.api.routes.chat.generate_answer_stream",
+            fail_generate_answer_stream,
+        )
+
+        response = client.post(
+            "/api/chat",
+            json={
+                "question": (
+                    "What is the status of my replacement order?"
+                )
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith(
+            "application/x-ndjson"
+        )
+
+        lines = [
+            line
+            for line in response.text.splitlines()
+            if line.strip()
+        ]
+
+        events = [json.loads(line) for line in lines]
+
+        assert events[0]["type"] == "sources"
+        assert events[0]["sources"] == []
+
+        token_events = [
+            event
+            for event in events
+            if event["type"] == "token"
+        ]
+
+        assert len(token_events) == 1
+        assert token_events[0]["content"] == (
+            "I don't have enough information "
+            "to answer that question."
+        )
+
+        escalation_events = [
+            event
+            for event in events
+            if event["type"] == "escalation"
+        ]
+
+        assert len(escalation_events) == 1
+
+        escalation = escalation_events[0]
+
+        assert escalation["required"] is True
+        assert escalation["reason"] == (
+            "The available business knowledge "
+            "does not contain enough information "
+            "to answer confidently."
+        )
+        assert escalation["ticket_id"] == (
+            "33333333-3333-3333-3333-333333333333"
+        )
+
+        assert events[-1]["type"] == "done"
+
+    finally:
+        teardown_authenticated_client()
 
 def test_chat_rejects_empty_question():
     setup_authenticated_client()
@@ -222,6 +349,7 @@ def test_chat_rate_limit(monkeypatch):
                         ),
                     }
                 ],
+                True,
             )
 
         def mock_generate_answer_stream(

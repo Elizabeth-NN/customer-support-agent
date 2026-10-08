@@ -8,6 +8,20 @@ from app.services.retrieval import retrieve_relevant_chunks
 RAG_CONFIDENCE_DISTANCE_THRESHOLD = 0.55
 
 
+def has_confident_context(chunks: list[dict]) -> bool:
+    """Return True when the best retrieved chunk is sufficiently relevant."""
+
+    if not chunks:
+        return False
+
+    best_distance = min(
+        float(chunk["distance"])
+        for chunk in chunks
+    )
+
+    return best_distance <= RAG_CONFIDENCE_DISTANCE_THRESHOLD
+
+
 def _build_prompt(
     question: str,
     chunks: list[dict],
@@ -35,28 +49,25 @@ Customer question:
 Answer:"""
 
 
-def _has_confident_match(chunks: list[dict]) -> bool:
-    """Return whether the best retrieved chunk is sufficiently similar."""
-
-    if not chunks:
-        return False
-
-    best_distance = float(chunks[0]["distance"])
-
-    return best_distance <= RAG_CONFIDENCE_DISTANCE_THRESHOLD
-
-
 def retrieve_answer_context(
     question: str,
     business_id: UUID,
     limit: int = 5,
-) -> tuple[str | None, list[dict]]:
-    """Retrieve knowledge and build the grounded prompt."""
+) -> tuple[str | None, list[dict], bool]:
+    """Retrieve knowledge, build the grounded prompt, and assess confidence."""
 
     chunks = retrieve_relevant_chunks(
         question,
         business_id=business_id,
         limit=limit,
+    )
+
+    if not chunks:
+        return None, [], False
+
+    prompt = _build_prompt(
+        question,
+        chunks,
     )
 
     sources = [
@@ -73,15 +84,9 @@ def retrieve_answer_context(
         for chunk in chunks
     ]
 
-    if not _has_confident_match(chunks):
-        return None, sources
+    confident = has_confident_context(chunks)
 
-    prompt = _build_prompt(
-        question,
-        chunks,
-    )
-
-    return prompt, sources
+    return prompt, sources, confident
 
 
 def generate_answer(
@@ -91,13 +96,16 @@ def generate_answer(
 ) -> str:
     """Generate a complete grounded answer."""
 
-    prompt, _ = retrieve_answer_context(
+    prompt, _, confident = retrieve_answer_context(
         question,
         business_id=business_id,
         limit=limit,
     )
 
     if prompt is None:
+        return "I don't have enough information to answer that question."
+
+    if not confident:
         return "I don't have enough information to answer that question."
 
     return generate_text(prompt)
@@ -110,13 +118,17 @@ def generate_answer_stream(
 ) -> Iterator[str]:
     """Generate a grounded answer as a stream."""
 
-    prompt, _ = retrieve_answer_context(
+    prompt, _, confident = retrieve_answer_context(
         question,
         business_id=business_id,
         limit=limit,
     )
 
     if prompt is None:
+        yield "I don't have enough information to answer that question."
+        return
+
+    if not confident:
         yield "I don't have enough information to answer that question."
         return
 
