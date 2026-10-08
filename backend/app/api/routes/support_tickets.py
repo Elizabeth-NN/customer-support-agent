@@ -8,11 +8,13 @@ from app.db.session import engine
 from app.schemas.support_ticket import (
     SupportTicketCreate,
     SupportTicketResponse,
+    SupportTicketUpdate,
 )
 from app.services.support_tickets import (
     create_support_ticket,
     get_support_ticket,
     list_support_tickets,
+    update_support_ticket_status,
 )
 
 
@@ -96,6 +98,39 @@ def get_ticket(
         )
 
     return ticket
+
+@router.patch(
+    "/{ticket_id}",
+    response_model=SupportTicketResponse,
+)
+def update_ticket(
+    ticket_id: UUID,
+    ticket: SupportTicketUpdate,
+    auth_payload: dict = Depends(require_auth),
+) -> dict:
+    clerk_user_id = auth_payload.get("sub")
+
+    if not clerk_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticated user ID is missing.",
+        )
+
+    business_id = get_business_id_for_user(clerk_user_id)
+
+    updated_ticket = update_support_ticket_status(
+        business_id=business_id,
+        ticket_id=ticket_id,
+        status=ticket.status,
+    )
+
+    if updated_ticket is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Support ticket not found.",
+        )
+
+    return updated_ticket
 
 @router.post(
     "",

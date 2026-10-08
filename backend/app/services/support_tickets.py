@@ -89,3 +89,34 @@ def get_support_ticket(
 
     return dict(row)
 
+def update_support_ticket_status(
+    business_id: UUID,
+    ticket_id: UUID,
+    status: str,
+) -> dict | None:
+    """Update a support ticket status for a business."""
+
+    statement = (
+        SupportTicket.__table__.update()
+        .where(
+            SupportTicket.id == ticket_id,
+            SupportTicket.business_id == business_id,
+        )
+        .values(status=status)
+        .returning(
+            SupportTicket.id,
+            SupportTicket.business_id,
+            SupportTicket.customer_question,
+            SupportTicket.escalation_reason,
+            SupportTicket.status,
+        )
+    )
+
+    with engine.begin() as conn:
+        row = conn.execute(statement).mappings().one_or_none()
+
+    if row is None:
+        return None
+
+    return dict(row)
+
