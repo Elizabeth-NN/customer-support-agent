@@ -19,4 +19,9 @@ def test_retrieve_relevant_chunks():
 
     assert "content" in top_result
     assert "distance" in top_result
-    assert "customer support hours" in top_result["content"].lower()
+
+    content = top_result["content"].lower()
+
+    assert "customer support" in content
+    assert "monday to friday" in content
+    assert "8 am to 5 pm" in content
