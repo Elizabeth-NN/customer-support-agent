@@ -14,4 +14,7 @@ __all__ = [
     "support_tickets_router",
     "tools_router",
     "evaluations_router",
+    "settings_router",
 ]
+
+from app.api.routes.settings import router as settings_router
