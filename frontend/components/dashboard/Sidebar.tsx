@@ -241,10 +241,15 @@ export default function Sidebar({
         }`}
       >
         <div className="flex items-center justify-between px-3 pb-6">
-          <div className="flex items-center gap-2.5 text-base font-bold tracking-[-0.02em]">
+          <Link
+            href="/"
+            aria-label="RafikiSupport AI homepage"
+            onClick={onClose}
+            className="flex items-center gap-2.5 text-base font-bold tracking-[-0.02em]"
+          >
             <div className="h-6 w-6 rounded-md bg-black" />
             RafikiSupport AI
-          </div>
+          </Link>
 
           <button
             type="button"

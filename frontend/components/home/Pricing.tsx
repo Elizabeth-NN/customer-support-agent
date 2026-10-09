@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { CheckIcon } from "@heroicons/react/24/outline";
+import ChatActionButton from "@/components/home/ChatActionButton";
 
 export default function Pricing() {
   return (
@@ -71,12 +73,12 @@ export default function Pricing() {
               dark
             />
 
-            <button
-              type="button"
-              className="mt-auto w-full rounded-[12px] bg-white py-3 font-bold text-black transition-all duration-200 hover:-translate-y-0.5 hover:bg-stone-100"
+            <Link
+              href="/sign-up"
+              className="mt-auto block w-full rounded-[12px] bg-white py-3 text-center font-bold text-black transition-all duration-200 hover:-translate-y-0.5 hover:bg-stone-100"
             >
               Start free trial
-            </button>
+            </Link>
           </div>
 
           <PricingCard
@@ -145,12 +147,18 @@ function PricingCard({
 
       <FeatureList features={features} />
 
-      <button
-        type="button"
-        className="btn-secondary mt-auto w-full rounded-[12px] py-3 font-bold"
-      >
-        {button}
-      </button>
+      {button === "Talk to sales" ? (
+        <ChatActionButton className="btn-secondary mt-auto w-full rounded-[12px] py-3 font-bold">
+          {button}
+        </ChatActionButton>
+      ) : (
+        <Link
+          href="/sign-up"
+          className="btn-secondary mt-auto block w-full rounded-[12px] py-3 text-center font-bold"
+        >
+          {button}
+        </Link>
+      )}
     </div>
   );
 }

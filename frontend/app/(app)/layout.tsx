@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import { UserButton } from "@clerk/nextjs";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -42,10 +43,14 @@ export default function AppLayout({
           >
             <Bars3Icon className="h-6 w-6" />
           </button>
-          <div className="flex items-center gap-2 text-sm font-bold tracking-[-0.02em]">
+          <Link
+            href="/"
+            aria-label="RafikiSupport AI homepage"
+            className="flex items-center gap-2 text-sm font-bold tracking-[-0.02em]"
+          >
             <div className="h-5 w-5 rounded-[5px] bg-black" />
             RafikiSupport AI
-          </div>
+          </Link>
           <div className="flex w-10 justify-end">
             <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
           </div>

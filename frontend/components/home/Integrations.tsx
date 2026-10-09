@@ -33,7 +33,7 @@ const integrations = [
 
 export default function Integrations() {
   return (
-    <section className="w-full bg-white px-6 py-20 md:px-8 md:py-24">
+    <section id="integrations" className="scroll-mt-24 w-full bg-white px-6 py-20 md:px-8 md:py-24">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 lg:flex-row lg:gap-16">
         <div className="lg:w-1/2 animate-fade-in-up">
           <div className="badge badge-amber mb-6">Integrations</div>

@@ -1,8 +1,18 @@
 import Link from "next/link";
+import ChatActionButton from "@/components/home/ChatActionButton";
 
-const productLinks = ["Overview", "Features", "Integrations", "Pricing"];
-const companyLinks = ["About", "Careers", "Blog", "Contact"];
-const legalLinks = ["Privacy", "Terms", "Security"];
+const productLinks = [
+  { label: "Overview", href: "#platform" },
+  { label: "Features", href: "#knowledge" },
+  { label: "Integrations", href: "#integrations" },
+  { label: "Pricing", href: "#pricing" },
+];
+const companyLinks = [
+  { label: "Case studies", href: "#case-studies" },
+  { label: "Talk to us", href: "#support-chat" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Sign in", href: "/sign-in" },
+];
 
 export default function Footer() {
   return (
@@ -22,20 +32,15 @@ export default function Footer() {
             Human-centered AI that actually works.
           </p>
 
-          <div className="flex gap-4">
-            <SocialButton label="X">
-              <span className="text-xs font-bold">X</span>
-            </SocialButton>
-
-            <SocialButton label="LinkedIn">
-              <span className="text-xs font-bold">in</span>
-            </SocialButton>
-          </div>
+          <ChatActionButton
+            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-800"
+          >
+            Chat with support
+          </ChatActionButton>
         </div>
 
         <FooterColumn title="Product" links={productLinks} />
-        <FooterColumn title="Company" links={companyLinks} />
-        <FooterColumn title="Legal" links={legalLinks} />
+        <FooterColumn title="Explore" links={companyLinks} />
       </div>
 
       <div className="mx-auto mt-16 flex max-w-7xl flex-col justify-between gap-4 border-t border-stone-100 pt-8 text-xs font-bold text-stone-400 md:mt-20 md:flex-row">
@@ -55,7 +60,7 @@ function FooterColumn({
   links,
 }: {
   title: string;
-  links: string[];
+  links: { label: string; href: string }[];
 }) {
   return (
     <div>
@@ -65,34 +70,22 @@ function FooterColumn({
 
       <ul className="space-y-4 text-sm font-medium text-stone-500">
         {links.map((link) => (
-          <li key={link}>
-            <Link
-              href="#"
-              className="inline-block transition-all duration-200 hover:translate-x-0.5 hover:text-black"
-            >
-              {link}
-            </Link>
+          <li key={link.label}>
+            {link.href === "#support-chat" ? (
+              <ChatActionButton className="inline-block text-left transition-all duration-200 hover:translate-x-0.5 hover:text-black">
+                {link.label}
+              </ChatActionButton>
+            ) : (
+              <Link
+                href={link.href}
+                className="inline-block transition-all duration-200 hover:translate-x-0.5 hover:text-black"
+              >
+                {link.label}
+              </Link>
+            )}
           </li>
         ))}
       </ul>
     </div>
-  );
-}
-
-function SocialButton({
-  children,
-  label,
-}: {
-  children: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-200 transition-all duration-200 hover:-translate-y-0.5 hover:bg-stone-300 hover:shadow-sm active:translate-y-0"
-    >
-      {children}
-    </button>
   );
 }

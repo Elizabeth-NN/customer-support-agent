@@ -1,3 +1,6 @@
+import Link from "next/link";
+import ChatActionButton from "@/components/home/ChatActionButton";
+
 export default function Hero() {
   return (
     <section
@@ -31,19 +34,17 @@ export default function Hero() {
       </p>
 
       <div className="mb-20 flex flex-col gap-4 sm:flex-row">
-        <button
-          type="button"
+        <ChatActionButton
           className="btn-primary rounded-[12px] px-8 py-4 text-lg font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-xl active:translate-y-0"
         >
           Book a personalized demo
-        </button>
+        </ChatActionButton>
 
-        <button
-          type="button"
+        <ChatActionButton
           className="btn-secondary rounded-[12px] px-8 py-4 text-lg font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-lg active:translate-y-0"
         >
           See it in action
-        </button>
+        </ChatActionButton>
       </div>
 
       <DashboardPreview />
@@ -150,12 +151,12 @@ function DashboardPreview() {
           Users asking about API v2.4 keys. No matching docs.
         </div>
 
-        <button
-          type="button"
-          className="mt-1 rounded-md bg-black py-1.5 text-[10px] text-white transition-transform hover:-translate-y-0.5"
+        <Link
+          href="/documents"
+          className="mt-1 inline-block rounded-md bg-black py-1.5 text-center text-[10px] text-white transition-transform hover:-translate-y-0.5"
         >
           Fix documentation
-        </button>
+        </Link>
       </div>
     </div>
   );

@@ -1,3 +1,6 @@
+import Link from "next/link";
+import ChatActionButton from "@/components/home/ChatActionButton";
+
 export default function CTA() {
   return (
     <section className="w-full px-6 py-24 md:px-8 md:py-32">
@@ -27,19 +30,18 @@ export default function CTA() {
             className="flex flex-col items-center justify-center gap-4 sm:flex-row animate-fade-in-up"
             style={{ animationDelay: "0.24s" }}
           >
-            <button
-              type="button"
+            <Link
+              href="/sign-up"
               className="rounded-[12px] bg-white px-8 py-4 text-lg font-bold text-black transition-all duration-200 hover:-translate-y-1 hover:bg-stone-100 hover:shadow-lg active:translate-y-0"
             >
               Start your 14-day free trial
-            </button>
+            </Link>
 
-            <button
-              type="button"
+            <ChatActionButton
               className="rounded-[12px] border border-white/20 px-8 py-4 text-lg font-bold text-white transition-all duration-200 hover:-translate-y-1 hover:bg-white/5 hover:shadow-lg active:translate-y-0"
             >
               Talk to sales
-            </button>
+            </ChatActionButton>
           </div>
         </div>
       </div>

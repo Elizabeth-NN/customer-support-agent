@@ -42,6 +42,12 @@ export default function PublicChatWidget() {
 
  
   useEffect(() => {
+    const openChat = () => setIsOpen(true);
+    window.addEventListener("rafiki:open-chat", openChat);
+    return () => window.removeEventListener("rafiki:open-chat", openChat);
+  }, []);
+
+  useEffect(() => {
     if (!widgetId || !isOpen || config) return;
 
     let cancelled = false;
