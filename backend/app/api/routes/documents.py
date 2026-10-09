@@ -1,11 +1,14 @@
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from fastapi import (
     APIRouter,
     Depends,
     File,
     Form,
     HTTPException,
+    Response,
     UploadFile,
     status,
 )
@@ -17,14 +20,18 @@ from app.services.ingestion.service import ingest_r2_document
 from app.services.knowledge_documents import (
     delete_knowledge_document,
     list_knowledge_documents,
+    set_document_publication,
 )
 from app.services.storage import delete_file, upload_file
-from app.services.knowledge_documents import list_knowledge_documents
 
 router = APIRouter(
     prefix="/api/documents",
     tags=["documents"],
 )
+
+
+class DocumentPublicationUpdate(BaseModel):
+    is_published: bool
 
 
 ALLOWED_CONTENT_TYPES = {
@@ -77,14 +84,14 @@ def get_documents(
 
     return list_knowledge_documents(business_id)
 
-@router.delete(
-    "/{document_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-def delete_document(
+
+
+@router.patch("/{document_id}/publication")
+def update_document_publication(
     document_id: UUID,
+    payload: DocumentPublicationUpdate,
     auth_payload: dict = Depends(require_auth),
-) -> None:
+) -> dict:
     clerk_user_id = auth_payload.get("sub")
 
     if not clerk_user_id:
@@ -95,8 +102,38 @@ def delete_document(
 
     business_id = get_business_id_for_user(clerk_user_id)
 
-    
-    
+    document = set_document_publication(
+        business_id=business_id,
+        document_id=document_id,
+        is_published=payload.is_published,
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found.",
+        )
+
+    return document
+
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_document(
+    document_id: UUID,
+    auth_payload: dict = Depends(require_auth),
+):
+    clerk_user_id = auth_payload.get("sub")
+
+    if not clerk_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticated user ID is missing.",
+        )
+
+    business_id = get_business_id_for_user(clerk_user_id)
+
     try:
         source_uri = delete_knowledge_document(
             business_id=business_id,
@@ -115,19 +152,8 @@ def delete_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found.",
         )
-    
 
-    
-
-
-    if source_uri:
-        try:
-            delete_file(source_uri)
-        except Exception:
-            # The database record has already been removed.
-            # Do not turn a successful database deletion into a
-            # failed API response because R2 cleanup failed.
-            pass
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.post(
     "",

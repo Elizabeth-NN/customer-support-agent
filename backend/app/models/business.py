@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from datetime import datetime
 
@@ -20,6 +21,14 @@ class Business(Base):
         nullable=False,
         unique=True,
         index=True,
+    )
+
+    public_widget_id: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        unique=True,
+        index=True,
+        default=lambda: secrets.token_urlsafe(32),
     )
 
     name: Mapped[str] = mapped_column(

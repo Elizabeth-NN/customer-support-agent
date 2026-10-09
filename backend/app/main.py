@@ -11,6 +11,7 @@ from app.api.routes import (
     tools_router,
     evaluations_router,
     settings_router,
+    public_chat_router,
 )
 
 from app.core.rate_limit import limiter
@@ -35,6 +36,7 @@ app.include_router(tools_router)
 app.include_router(overview_router)
 app.include_router(evaluations_router)
 app.include_router(settings_router)
+app.include_router(public_chat_router)
 
 @app.get("/health")
 def health_check() -> dict[str, str]:

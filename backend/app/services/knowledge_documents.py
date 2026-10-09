@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 
 from app.db.session import engine
 from app.models.knowledge_document import KnowledgeDocument
@@ -17,6 +17,7 @@ def list_knowledge_documents(
             KnowledgeDocument.id,
             KnowledgeDocument.business_id,
             KnowledgeDocument.title,
+            KnowledgeDocument.is_published,
             KnowledgeDocument.source_type,
             KnowledgeDocument.source_uri,
             KnowledgeDocument.created_at,
@@ -64,3 +65,42 @@ def delete_knowledge_document(
         delete_file(source_uri)
 
     return source_uri
+
+
+def set_document_publication(
+    business_id: UUID,
+    document_id: UUID,
+    is_published: bool,
+) -> dict | None:
+    """Update publication status for a document owned by a business."""
+
+    with engine.begin() as conn:
+        result = conn.execute(
+            update(KnowledgeDocument)
+            .where(
+                KnowledgeDocument.id == document_id,
+                KnowledgeDocument.business_id == business_id,
+            )
+            .values(is_published=is_published)
+        )
+
+        if result.rowcount == 0:
+            return None
+
+        statement = select(
+            KnowledgeDocument.id,
+            KnowledgeDocument.business_id,
+            KnowledgeDocument.title,
+            KnowledgeDocument.source_type,
+            KnowledgeDocument.source_uri,
+            KnowledgeDocument.is_published,
+            KnowledgeDocument.created_at,
+            KnowledgeDocument.updated_at,
+        ).where(
+            KnowledgeDocument.id == document_id,
+            KnowledgeDocument.business_id == business_id,
+        )
+
+        row = conn.execute(statement).mappings().one()
+
+    return dict(row)

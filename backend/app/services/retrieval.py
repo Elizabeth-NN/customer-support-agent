@@ -10,6 +10,7 @@ def retrieve_relevant_chunks(
     question: str,
     business_id: UUID,
     limit: int = 5,
+    public_only: bool = False,
 ) -> list[dict]:
     """Retrieve relevant knowledge chunks and their source metadata."""
 
@@ -32,6 +33,7 @@ def retrieve_relevant_chunks(
                 INNER JOIN knowledge_documents kd
                     ON kd.id = dc.document_id
                 WHERE kd.business_id = :business_id
+                  AND (:public_only = false OR kd.is_published = true)
                 ORDER BY dc.embedding <=> CAST(:embedding AS vector)
                 LIMIT :limit
                 """
@@ -40,6 +42,7 @@ def retrieve_relevant_chunks(
                 "embedding": str(embedding),
                 "business_id": business_id,
                 "limit": limit,
+                "public_only": public_only,
             },
         )
 

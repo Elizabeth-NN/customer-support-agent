@@ -5,7 +5,7 @@ from app.api.routes.overview import router as overview_router
 from app.api.routes.support_tickets import router as support_tickets_router
 from app.api.routes.tools import router as tools_router
 from app.api.routes.evaluations import router as evaluations_router
-
+from app.api.routes.public_chat import router as public_chat_router
 
 __all__ = [
     "chat_router",

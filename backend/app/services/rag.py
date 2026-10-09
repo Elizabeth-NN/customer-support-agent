@@ -53,14 +53,25 @@ def retrieve_answer_context(
     question: str,
     business_id: UUID,
     limit: int = 5,
+    public_only: bool = False,
 ) -> tuple[str | None, list[dict], bool]:
     """Retrieve knowledge, build the grounded prompt, and assess confidence."""
 
-    chunks = retrieve_relevant_chunks(
-        question,
-        business_id=business_id,
-        limit=limit,
-    )
+    if public_only:
+        chunks = retrieve_relevant_chunks(
+            question,
+            business_id=business_id,
+            limit=limit,
+            public_only=True,
+        )
+    else:
+        # Preserve the existing call signature for dashboard behavior
+        # and compatibility with existing tests.
+        chunks = retrieve_relevant_chunks(
+            question,
+            business_id=business_id,
+            limit=limit,
+        )
 
     if not chunks:
         return None, [], False
