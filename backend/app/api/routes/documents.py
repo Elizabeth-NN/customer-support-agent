@@ -95,16 +95,30 @@ def delete_document(
 
     business_id = get_business_id_for_user(clerk_user_id)
 
-    source_uri = delete_knowledge_document(
-        business_id=business_id,
-        document_id=document_id,
-    )
+    
+    
+    try:
+        source_uri = delete_knowledge_document(
+            business_id=business_id,
+            document_id=document_id,
+        )
+    except ValueError as exc:
+        if str(exc) == "Document not found.":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found.",
+            ) from exc
+        raise
 
     if source_uri is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found.",
         )
+    
+
+    
+
 
     if source_uri:
         try:
