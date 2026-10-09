@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, SVGProps } from "react";
+import { useEffect, useState, type ComponentType, type SVGProps } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -48,7 +48,6 @@ const navigation: NavGroup[] = [
         label: "Escalations",
         href: "/escalations",
         icon: ExclamationTriangleIcon,
-        count: 3,
       },
     ],
   },
@@ -131,6 +130,16 @@ function SidebarUser() {
   );
 }
 
+type SidebarOverview = {
+  document_count: number;
+  open_ticket_count: number;
+  in_progress_ticket_count: number;
+};
+
+type SidebarSettings = {
+  name: string;
+};
+
 type SidebarProps = {
   open: boolean;
   onClose: () => void;
@@ -143,6 +152,64 @@ export default function Sidebar({
   items = navigation,
 }: SidebarProps) {
   const pathname = usePathname();
+
+  const [overview, setOverview] = useState<SidebarOverview | null>(null);
+  const [businessName, setBusinessName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSidebarData() {
+      const [overviewResult, settingsResult] = await Promise.allSettled([
+        fetch("/api/backend/overview", {
+          cache: "no-store",
+        }),
+        fetch("/api/backend/settings", {
+          cache: "no-store",
+        }),
+      ]);
+
+      if (cancelled) return;
+
+      if (
+        overviewResult.status === "fulfilled" &&
+        overviewResult.value.ok
+      ) {
+        try {
+          const data = await overviewResult.value.json();
+          if (!cancelled) {
+            setOverview(data);
+          }
+        } catch {
+          // Keep counts hidden if the response is invalid.
+        }
+      }
+
+      if (
+        settingsResult.status === "fulfilled" &&
+        settingsResult.value.ok
+      ) {
+        try {
+          const data = (await settingsResult.value.json()) as SidebarSettings;
+          if (!cancelled && data.name?.trim()) {
+            setBusinessName(data.name.trim());
+          }
+        } catch {
+          // Keep the generic workspace label if settings cannot be read.
+        }
+      }
+    }
+
+    void loadSidebarData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const unresolvedCount = overview
+    ? overview.open_ticket_count + overview.in_progress_ticket_count
+    : undefined;
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -200,6 +267,12 @@ export default function Sidebar({
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href);
+                  const count =
+                    item.href === "/escalations"
+                      ? unresolvedCount
+                      : item.href === "/documents"
+                        ? overview?.document_count
+                        : item.count;
 
                   return (
                     <li key={item.label}>
@@ -221,9 +294,9 @@ export default function Sidebar({
 
                         <span className="flex-1">{item.label}</span>
 
-                        {item.count ? (
+                        {count !== undefined && count > 0 ? (
                           <span className="rounded-full bg-black px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
-                            {item.count}
+                            {count}
                           </span>
                         ) : null}
                       </Link>
@@ -240,7 +313,7 @@ export default function Sidebar({
             type="button"
             className={`mb-3 flex w-full items-center justify-between rounded-lg bg-white px-3 py-2.5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] ${focusRing}`}
           >
-            <span className="text-[13px] font-semibold">Acme Corp</span>
+            <span className="truncate text-[13px] font-semibold">{businessName ?? "Business workspace"}</span>
             <ChevronUpDownIcon className="h-4 w-4 text-[#8A8A8A]" />
           </button>
 
