@@ -333,9 +333,14 @@ export default function PublicChatWidget() {
                         Sources
                       </p>
                       <ul className="space-y-1">
-                        {message.sources.map((source, index) => (
+                        {[...new Map(
+                          message.sources.map((source) => [
+                            source.document_title.trim().toLowerCase(),
+                            source,
+                          ]),
+                        ).values()].map((source) => (
                           <li
-                            key={`${source.document_title}-${index}`}
+                            key={source.document_title.trim().toLowerCase()}
                             className="break-words text-xs text-gray-600"
                           >
                             {source.document_title}

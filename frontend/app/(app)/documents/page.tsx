@@ -17,6 +17,7 @@ type KnowledgeDocument = {
   source_uri: string | null;
   created_at: string;
   updated_at: string;
+  is_published: boolean;
 };
 
 type UploadResponse = {
@@ -41,6 +42,7 @@ export default function DocumentsPage() {
 
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
   const [uploadResult, setUploadResult] =
     useState<UploadResponse | null>(null);
   const [error, setError] = useState("");
@@ -227,7 +229,43 @@ export default function DocumentsPage() {
     }
   }
 
-    async function handleDelete(document: KnowledgeDocument) {
+  async function handlePublicationToggle(document: KnowledgeDocument) {
+    const nextPublishedState = !document.is_published;
+    setError("");
+    setPublishingId(document.id);
+
+    try {
+      const response = await fetch(
+        `/api/backend/documents/${document.id}/publication`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_published: nextPublishedState }),
+        },
+      );
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.detail || "Unable to update publication status.");
+      }
+
+      setDocuments((current) =>
+        current.map((item) =>
+          item.id === document.id
+            ? { ...item, is_published: nextPublishedState }
+            : item,
+        ),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to update publication status.",
+      );
+    } finally {
+      setPublishingId(null);
+    }
+  }
+
+  async function handleDelete(document: KnowledgeDocument) {
     const confirmed = window.confirm(
       `Remove "${document.title}" from the knowledge base?\n\nThis will also remove its knowledge chunks.`,
     );
@@ -516,20 +554,49 @@ export default function DocumentsPage() {
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(document)}
-                        disabled={deletingId === document.id}
-                        aria-label={`Remove ${document.title}`}
-                        title="Remove document"
-                        className="shrink-0 rounded-lg p-2 text-[#888] transition hover:bg-[#fce8e6] hover:text-[#d93025] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <TrashIcon
-                          className={`h-4 w-4 ${
-                            deletingId === document.id ? "animate-pulse" : ""
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            document.is_published
+                              ? "bg-green-100 text-green-800"
+                              : "bg-amber-100 text-amber-800"
                           }`}
-                        />
-                      </button>
+                        >
+                          {document.is_published ? "Published" : "Unpublished"}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handlePublicationToggle(document)}
+                          disabled={publishingId === document.id}
+                          className={`rounded-lg px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            document.is_published
+                              ? "border border-black/10 text-[#555] hover:bg-black/5"
+                              : "bg-[#166534] text-white hover:bg-[#14532d]"
+                          }`}
+                        >
+                          {publishingId === document.id
+                            ? "Saving..."
+                            : document.is_published
+                              ? "Unpublish"
+                              : "Publish"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(document)}
+                          disabled={deletingId === document.id}
+                          aria-label={`Remove ${document.title}`}
+                          title="Remove document"
+                          className="rounded-lg p-2 text-[#888] transition hover:bg-[#fce8e6] hover:text-[#d93025] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <TrashIcon
+                            className={`h-4 w-4 ${
+                              deletingId === document.id ? "animate-pulse" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
                     </div>
 
                     {document.source_uri && (
