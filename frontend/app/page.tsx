@@ -6,6 +6,7 @@ import Integrations from "@/components/home/Integrations";
 import Testimonial from "@/components/home/Testimonial";
 import CTA from "@/components/home/CTA";
 import Footer from "@/components/home/Footer";
+import PublicChatWidget from "@/components/chat/PublicChatWidget";
 
 export default function HomePage() {
   return (
@@ -18,6 +19,7 @@ export default function HomePage() {
       <Testimonial />
       <CTA />
       <Footer />
+      <PublicChatWidget />
     </main>
   );
 }
