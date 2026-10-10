@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ChatActionButton from "@/components/home/ChatActionButton";
+
 
 export default function Hero() {
   return (
@@ -34,17 +34,21 @@ export default function Hero() {
       </p>
 
       <div className="mb-20 flex flex-col gap-4 sm:flex-row">
-        <ChatActionButton
+        <a
+          href="https://wa.me/254715099503?text=Hi%2C%20I%27d%20like%20to%20book%20a%20personalized%20demo%20of%20Rafiki."
+          target="_blank"
+          rel="noopener noreferrer"
           className="btn-primary rounded-[12px] px-8 py-4 text-lg font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-xl active:translate-y-0"
         >
           Book a personalized demo
-        </ChatActionButton>
+        </a>
 
-        <ChatActionButton
+        <Link
+          href="/demo"
           className="btn-secondary rounded-[12px] px-8 py-4 text-lg font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-lg active:translate-y-0"
         >
           See it in action
-        </ChatActionButton>
+        </Link>
       </div>
 
       <DashboardPreview />
