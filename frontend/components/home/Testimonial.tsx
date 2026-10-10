@@ -11,28 +11,17 @@ export default function Testimonial() {
           <ChatBubbleLeftRightIcon className="h-5 w-5 text-stone-600" />
         </div>
 
-        <h2 className="mb-10 text-3xl font-bold leading-tight md:text-4xl">
-          &quot;We reduced our average response time from 4 hours to 1.4
-          seconds overnight. Rafiki is the best hire we&apos;ve made this
-          year.&quot;
+        <div className="badge badge-green mb-6">The Rafiki approach</div>
+
+        <h2 className="mb-6 text-3xl font-bold leading-tight md:text-4xl">
+          Better support starts with answers grounded in your own knowledge.
         </h2>
 
-        <div
-          className="flex items-center justify-center gap-4 animate-fade-in"
-          style={{ animationDelay: "0.25s" }}
-        >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-300">
-            <span className="text-sm font-bold text-stone-600">JV</span>
-          </div>
-
-          <div className="text-left">
-            <div className="font-bold">Julian Voss</div>
-
-            <div className="text-sm text-stone-500">
-              VP Support, Acme Corp
-            </div>
-          </div>
-        </div>
+        <p className="mx-auto max-w-2xl text-lg leading-relaxed text-stone-500">
+          Rafiki is designed to retrieve relevant information from your
+          published documents, provide source references when available, and
+          flag questions that may need human attention.
+        </p>
       </div>
     </section>
   );

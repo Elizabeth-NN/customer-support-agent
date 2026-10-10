@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Inter } from "next/font/google";
-import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+import "./globals.css";
+import { Bricolage_Grotesque, Public_Sans } from "next/font/google";
+
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage" });
+const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public" });
+
+
 
 export const metadata: Metadata = {
   title: "rafikiSupport AI | The Intelligent Support Layer",
@@ -26,7 +27,7 @@ export default function RootLayout({
       signUpFallbackRedirectUrl="/dashboard"
     >
       <html lang="en">
-        <body className={inter.variable}>{children}</body>
+        <body >{children}</body>
       </html>
     </ClerkProvider>
   );

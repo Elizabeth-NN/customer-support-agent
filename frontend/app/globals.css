@@ -1,24 +1,44 @@
 @import "tailwindcss";
 
+/* Tailwind v4 tokens: gives you bg-ink, bg-paper, bg-rafiki, bg-marigold,
+   font-display, etc. The --font-bricolage / --font-public variables come
+   from next/font in app/layout.tsx. */
+@theme inline {
+  --color-ink: #16211c;
+  --color-paper: #fbfbf8;
+  --color-rafiki: #1e7a4f;
+  --color-rafiki-dark: #165c3b;
+  --color-marigold: #f4c542;
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-public), ui-sans-serif, system-ui, sans-serif;
+}
+
 :root {
-  --bg-canvas: #f2f0eb;
+  --ink: #16211c;
+  --paper: #fbfbf8;
+  --rafiki: #1e7a4f;
+  --rafiki-dark: #165c3b;
+  --marigold: #f4c542;
+
+  --bg-canvas: var(--paper);
   --bg-card: #ffffff;
 
-  --text-primary: #000000;
-  --text-secondary: #6b6b6b;
-  --text-muted: #999999;
+  --text-primary: var(--ink);
+  --text-secondary: #5b6560;
+  --text-muted: #7a837e;
 
   --accent-blue-bg: #e8f0fe;
   --accent-blue-text: #1967d2;
 
-  --accent-green-bg: #e6f4ea;
-  --accent-green-text: #1e8e3e;
+  --accent-green-bg: #e5f2ea;
+  --accent-green-text: #1e7a4f;
 
   --accent-red-bg: #fce8e6;
   --accent-red-text: #d93025;
 
-  --accent-amber-bg: #fef7e0;
-  --accent-amber-text: #b06000;
+  --accent-amber-bg: #fdf3d0;
+  --accent-amber-text: #8a5a00;
 
   --radius-lg: 18px;
   --radius-sm: 8px;
@@ -39,11 +59,22 @@ body {
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--bg-canvas);
   color: var(--text-primary);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-public), ui-sans-serif, system-ui, sans-serif;
   overflow-x: hidden;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 button,
@@ -54,27 +85,15 @@ a {
 button {
   font: inherit;
 }
-.btn-primary,
-.btn-secondary {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    opacity 0.2s ease;
-}
-
-.btn-primary:hover,
-.btn-secondary:hover {
-  transform: translateY(-2px);
-}
-
-.btn-primary:active,
-.btn-secondary:active {
-  transform: translateY(0);
-}
 
 ::selection {
-  background: #000;
+  background: var(--rafiki);
   color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--rafiki);
+  outline-offset: 2px;
 }
 
 /* =========================================================
@@ -82,54 +101,51 @@ button {
    ========================================================= */
 
 .btn-primary {
-  background-color: var(--text-primary);
+  display: inline-block;
+  background-color: var(--rafiki);
   color: #ffffff;
-  transition:
-    transform 0.2s ease,
-    opacity 0.2s ease;
+  transition: background-color 0.15s ease;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  opacity: 0.9;
+  background-color: var(--rafiki-dark);
 }
 
 .btn-secondary {
+  display: inline-block;
   background-color: #ffffff;
-  color: var(--text-primary);
-  box-shadow: var(--shadow-subtle);
-  transition:
-    transform 0.2s ease,
-    background-color 0.2s ease;
+  color: var(--ink);
+  border: 1px solid #d6d3d1;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .btn-secondary:hover {
-  transform: translateY(-1px);
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: #f5f5f4;
+  border-color: #a8a29e;
 }
 
+/* The one surface style for homepage panels: flat, bordered, one radius. */
+.panel {
+  background: #ffffff;
+  border: 1px solid #e7e5e4;
+  border-radius: 14px;
+}
+
+/* Kept for pages that still use it. Static: no lift on hover. */
 .card {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-subtle);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
-}
-
+/* Small status pill. Use only where it carries information
+   (e.g. "Coming soon"), not as an eyebrow above every heading. */
 .badge {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .badge-blue {
@@ -152,82 +168,31 @@ button {
   color: var(--accent-amber-text);
 }
 
+/* Chat-bubble logo mark with a marigold dot */
 .logo-mark {
-  width: 24px;
-  height: 24px;
-  background: var(--text-primary);
-  border-radius: 6px;
+  position: relative;
+  width: 26px;
+  height: 26px;
+  background: var(--rafiki);
+  border-radius: 9px 9px 9px 2px;
   flex-shrink: 0;
 }
 
-.hero-gradient {
-  background:
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(255, 255, 255, 1) 0%,
-      rgba(242, 240, 235, 0) 70%
-    );
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.7s ease both;
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.6s ease both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-fade-in-up,
-  .animate-fade-in,
-  .dashboard-sidebar,
-  .dashboard-header,
-  .dashboard-card,
-  .status-dot {
-    animation: none !important;
-  }
-
-  .dashboard-card {
-    transition: none !important;
-  }
+.logo-mark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: var(--marigold);
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
 }
 
 /* =========================================================
-   EXISTING DASHBOARD ANIMATIONS
+   ANIMATIONS (used by the hero reveal and the dashboard)
    ========================================================= */
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.55s ease both;
-}
 
 @keyframes fadeInUp {
   from {
@@ -248,6 +213,17 @@ button {
 
   to {
     opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
   }
 }
 
@@ -284,6 +260,18 @@ button {
   }
 }
 
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.55s ease both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease both;
+}
+
 .animate-glow {
   animation: glowFloat 7s ease-in-out infinite;
 }
@@ -292,12 +280,9 @@ button {
   animation: glowFloatReverse 8s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-glow,
-  .animate-glow-reverse {
-    animation: none !important;
-  }
-}
+/* =========================================================
+   DASHBOARD (unchanged)
+   ========================================================= */
 
 .dashboard-sidebar {
   animation: fadeIn 0.5s ease both;
@@ -322,10 +307,6 @@ button {
 .status-dot {
   animation: pulseDot 2.4s ease-in-out infinite;
 }
-
-/* =========================================================
-   RESPONSIVE DASHBOARD
-   ========================================================= */
 
 @media (max-width: 900px) {
   .dashboard-shell {
@@ -383,7 +364,7 @@ button {
 }
 
 /* =========================================================
-   ACCESSIBILITY / MOTION
+   REDUCED MOTION
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
@@ -392,16 +373,17 @@ button {
   }
 
   .animate-float,
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-glow,
+  .animate-glow-reverse,
   .dashboard-sidebar,
   .dashboard-header,
   .dashboard-card,
   .status-dot {
-    animation: none;
+    animation: none !important;
   }
 
-  .card:hover,
-  .btn-primary:hover,
-  .btn-secondary:hover,
   .dashboard-card:hover {
     transform: none;
   }
