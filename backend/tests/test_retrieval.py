@@ -1,11 +1,16 @@
+import pytest
+
 from uuid import UUID
 
 from app.services.retrieval import retrieve_relevant_chunks
 
 
-TEST_BUSINESS_ID = UUID("cf1a1025-66cd-4552-b7fd-dadebb0beebe")
+TEST_BUSINESS_ID = UUID(
+    "cf1a1025-66cd-4552-b7fd-dadebb0beebe"
+)
 
 
+@pytest.mark.integration
 def test_retrieve_relevant_chunks():
     results = retrieve_relevant_chunks(
         "When is customer support available?",

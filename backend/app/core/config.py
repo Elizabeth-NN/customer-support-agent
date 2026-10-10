@@ -17,8 +17,12 @@ class Settings(BaseSettings):
     clerk_jwt_key: str
     clerk_authorized_parties: list[str] = ["http://localhost:3000"]
 
-    # LLM
+    # LLM generation
     llm_provider: str = "ollama"
+
+    # Embeddings
+    embedding_provider: str = "gemini"
+    embedding_dimensions: int = 768
 
     # Ollama
     llm_base_url: str = "http://localhost:11434"
@@ -29,6 +33,7 @@ class Settings(BaseSettings):
     # Gemini
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.1-flash-lite"
+    gemini_embedding_model: str = "gemini-embedding-001"
 
     llm_timeout: float = 180.0
 

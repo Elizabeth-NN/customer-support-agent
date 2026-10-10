@@ -38,7 +38,10 @@ def ingest_text(
     chunk_rows = []
 
     for chunk_index, content in enumerate(chunks):
-        embedding = generate_embedding(content)
+        embedding = generate_embedding(
+            content,
+            task_type="RETRIEVAL_DOCUMENT",
+        )
 
         chunk_rows.append(
             {

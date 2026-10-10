@@ -1,6 +1,7 @@
 from uuid import UUID
 
 import pytest
+from unittest.mock import MagicMock
 
 from app.services.ingestion.service import (
     ingest_r2_document,
@@ -15,9 +16,20 @@ TEST_BUSINESS_ID = UUID(
 
 def test_ingest_text(monkeypatch):
     embeddings = []
+    mock_conn = MagicMock()
+    mock_transaction = MagicMock()
+    mock_transaction.__enter__.return_value = mock_conn
 
-    def mock_generate_embedding(text: str) -> list[float]:
-        embeddings.append(text)
+    monkeypatch.setattr(
+        "app.services.ingestion.service.engine.begin",
+        lambda: mock_transaction,
+    )
+
+    def mock_generate_embedding(
+        text: str,
+        task_type: str = "RETRIEVAL_DOCUMENT",
+    ) -> list[float]:
+        embeddings.append((text, task_type))
         return [0.1] * 768
 
     monkeypatch.setattr(
@@ -41,10 +53,11 @@ def test_ingest_text(monkeypatch):
     assert result["chunk_count"] == 1
 
     assert len(embeddings) == 1
-    assert embeddings[0] == (
+    assert embeddings[0][0] == (
         "Customer support is available Monday to Friday, "
         "8 AM to 5 PM."
     )
+    assert embeddings[0][1] == "RETRIEVAL_DOCUMENT"
 
 
 def test_ingest_text_rejects_empty_text():
@@ -54,25 +67,38 @@ def test_ingest_text_rejects_empty_text():
             title="Empty Document",
             text="   ",
         )
+
+
 def test_ingest_r2_document(monkeypatch):
     downloaded_files = []
+    embedding_tasks = []
+    mock_conn = MagicMock()
+    mock_transaction = MagicMock()
+    mock_transaction.__enter__.return_value = mock_conn
+
+    monkeypatch.setattr(
+        "app.services.ingestion.service.engine.begin",
+        lambda: mock_transaction,
+    )
 
     def mock_download_file(object_key: str) -> bytes:
         downloaded_files.append(object_key)
-
         return (
             b"Customer support is available "
             b"Monday to Friday, 8 AM to 5 PM."
         )
 
-    def mock_generate_embedding(text: str) -> list[float]:
+    def mock_generate_embedding(
+        text: str,
+        task_type: str = "RETRIEVAL_DOCUMENT",
+    ) -> list[float]:
+        embedding_tasks.append(task_type)
         return [0.1] * 768
 
     monkeypatch.setattr(
         "app.services.ingestion.service.download_file",
         mock_download_file,
     )
-
     monkeypatch.setattr(
         "app.services.ingestion.service.generate_embedding",
         mock_generate_embedding,
@@ -87,7 +113,6 @@ def test_ingest_r2_document(monkeypatch):
     assert downloaded_files == [
         "documents/customer-support.txt"
     ]
-
     assert result["business_id"] == TEST_BUSINESS_ID
     assert result["title"] == "Customer Support FAQ"
     assert result["source_type"] == "document"
@@ -95,4 +120,4 @@ def test_ingest_r2_document(monkeypatch):
         "documents/customer-support.txt"
     )
     assert result["chunk_count"] == 1
-
+    assert embedding_tasks == ["RETRIEVAL_DOCUMENT"]

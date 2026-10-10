@@ -14,7 +14,10 @@ def retrieve_relevant_chunks(
 ) -> list[dict]:
     """Retrieve relevant knowledge chunks and their source metadata."""
 
-    embedding = generate_embedding(question)
+    embedding = generate_embedding(
+        question,
+        task_type="RETRIEVAL_QUERY",
+    )
 
     with engine.connect() as conn:
         result = conn.execute(

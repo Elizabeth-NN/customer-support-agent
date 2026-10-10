@@ -14,22 +14,65 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+def generate_embedding(
+    text: str,
+    task_type: str = "RETRIEVAL_DOCUMENT",
+) -> list[float]:
+    """Generate a normalized embedding using the configured provider."""
 
-def generate_embedding(text: str) -> list[float]:
-    """Generate embeddings using the local Ollama embedding model."""
+    if settings.embedding_provider == "gemini":
+        if not settings.gemini_api_key:
+            raise ValueError("GEMINI_API_KEY is not configured.")
 
-    response = httpx.post(
-        f"{settings.llm_base_url}/api/embed",
-        json={
-            "model": settings.llm_embedding_model,
-            "input": text,
-        },
-        timeout=settings.llm_timeout,
+        client = genai.Client(api_key=settings.gemini_api_key)
+
+        response = client.models.embed_content(
+            model=settings.gemini_embedding_model,
+            contents=text,
+            config=types.EmbedContentConfig(
+                task_type=task_type,
+                output_dimensionality=settings.embedding_dimensions,
+            ),
+        )
+
+        if not response.embeddings:
+            raise ValueError("Gemini returned no embeddings.")
+
+        values = response.embeddings[0].values
+
+        if not values:
+            raise ValueError("Gemini returned an empty embedding.")
+
+        if len(values) != settings.embedding_dimensions:
+            raise ValueError(
+                f"Expected {settings.embedding_dimensions} embedding "
+                f"dimensions, received {len(values)}."
+            )
+
+        # gemini-embedding-001 requires normalization for reduced dimensions.
+        magnitude = sum(value * value for value in values) ** 0.5
+
+        if magnitude == 0:
+            raise ValueError("Gemini returned a zero-magnitude embedding.")
+
+        return [float(value / magnitude) for value in values]
+
+    if settings.embedding_provider == "ollama":
+        response = httpx.post(
+            f"{settings.llm_base_url}/api/embed",
+            json={
+                "model": settings.llm_embedding_model,
+                "input": text,
+            },
+            timeout=settings.llm_timeout,
+        )
+        response.raise_for_status()
+        return response.json()["embeddings"][0]
+
+    raise ValueError(
+        f"Unsupported embedding provider: {settings.embedding_provider}. "
+        "Supported providers: gemini, ollama"
     )
-
-    response.raise_for_status()
-
-    return response.json()["embeddings"][0]
 
 
 def generate_text(prompt: str) -> str:
