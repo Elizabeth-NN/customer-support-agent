@@ -270,6 +270,7 @@ def test_chat_creates_support_ticket_on_low_confidence(monkeypatch):
         assert escalation["ticket_id"] == (
             "33333333-3333-3333-3333-333333333333"
         )
+        assert escalation["ticket_created"] is True
 
         assert events[-1]["type"] == "done"
 
@@ -400,3 +401,144 @@ def test_chat_rate_limit(monkeypatch):
         limiter._storage.reset()
         teardown_authenticated_client()
 
+
+def test_chat_continues_when_retrieval_fails(monkeypatch):
+    setup_authenticated_client()
+
+    try:
+        def mock_retrieve_answer_context(*args, **kwargs):
+            raise RuntimeError("private database error")
+
+        def mock_generate_text_with_tools(prompt, business_id):
+            assert "When does support open?" in prompt
+            assert business_id == TEST_BUSINESS_ID
+            return "Support opens at 8 AM."
+
+        monkeypatch.setattr(
+            "app.api.routes.chat.retrieve_answer_context",
+            mock_retrieve_answer_context,
+        )
+        monkeypatch.setattr(
+            "app.api.routes.chat.generate_text_with_tools",
+            mock_generate_text_with_tools,
+        )
+
+        response = client.post(
+            "/api/chat",
+            json={"question": "When does support open?"},
+        )
+
+        assert response.status_code == 200
+        events = [
+            json.loads(line)
+            for line in response.text.splitlines()
+            if line.strip()
+        ]
+
+        assert events[0] == {"type": "sources", "sources": []}
+        assert any(
+            event.get("content") == "Support opens at 8 AM."
+            for event in events
+        )
+        assert events[-1] == {"type": "done"}
+        assert "private database error" not in response.text
+
+    finally:
+        teardown_authenticated_client()
+
+
+def test_chat_handles_ticket_creation_failure_after_generation_error(
+    monkeypatch,
+):
+    setup_authenticated_client()
+
+    try:
+        monkeypatch.setattr(
+            "app.api.routes.chat.retrieve_answer_context",
+            lambda *args, **kwargs: (None, [], False),
+        )
+        monkeypatch.setattr(
+            "app.api.routes.chat.generate_text_with_tools",
+            lambda *args, **kwargs: (_ for _ in ()).throw(
+                RuntimeError("private model error")
+            ),
+        )
+        monkeypatch.setattr(
+            "app.api.routes.chat.create_support_ticket",
+            lambda *args, **kwargs: (_ for _ in ()).throw(
+                RuntimeError("private ticket database error")
+            ),
+        )
+
+        response = client.post(
+            "/api/chat",
+            json={"question": "Where is my order?"},
+        )
+
+        assert response.status_code == 200
+        events = [
+            json.loads(line)
+            for line in response.text.splitlines()
+            if line.strip()
+        ]
+
+        escalation = next(
+            event for event in events if event["type"] == "escalation"
+        )
+        assert escalation["required"] is True
+        assert escalation["ticket_created"] is False
+        assert "ticket_id" not in escalation
+        assert events[-1] == {"type": "done"}
+        assert "private model error" not in response.text
+        assert "private ticket database error" not in response.text
+
+    finally:
+        teardown_authenticated_client()
+
+
+def test_chat_handles_ticket_creation_failure_on_low_confidence(
+    monkeypatch,
+):
+    setup_authenticated_client()
+
+    try:
+        monkeypatch.setattr(
+            "app.api.routes.chat.retrieve_answer_context",
+            lambda *args, **kwargs: (None, [], False),
+        )
+        monkeypatch.setattr(
+            "app.api.routes.chat.generate_text_with_tools",
+            lambda *args, **kwargs: (
+                "I don't have enough information to answer that question."
+            ),
+        )
+        monkeypatch.setattr(
+            "app.api.routes.chat.create_support_ticket",
+            lambda *args, **kwargs: (_ for _ in ()).throw(
+                RuntimeError("private ticket database error")
+            ),
+        )
+
+        response = client.post(
+            "/api/chat",
+            json={"question": "Where is my order?"},
+        )
+
+        assert response.status_code == 200
+        events = [
+            json.loads(line)
+            for line in response.text.splitlines()
+            if line.strip()
+        ]
+
+        escalation = next(
+            event for event in events if event["type"] == "escalation"
+        )
+        assert escalation["required"] is True
+        assert escalation["ticket_created"] is False
+        assert "ticket_id" not in escalation
+        assert events[-1] == {"type": "done"}
+        assert "private ticket database error" not in response.text
+
+    finally:
+        teardown_authenticated_client()

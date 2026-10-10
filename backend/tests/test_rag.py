@@ -128,3 +128,63 @@ def test_generate_answer_uses_boundary_confidence(
     )
 
     assert answer == "The answer is supported by the knowledge base."
+
+def test_generate_answer_returns_fallback_when_no_chunks(monkeypatch):
+    def mock_retrieve_relevant_chunks(
+        question: str,
+        business_id: UUID,
+        limit: int = 5,
+    ) -> list[dict]:
+        return []
+
+    def fail_generate_text(prompt: str) -> str:
+        raise AssertionError(
+            "LLM should not be called when retrieval returns no chunks."
+        )
+
+    monkeypatch.setattr(
+        "app.services.rag.retrieve_relevant_chunks",
+        mock_retrieve_relevant_chunks,
+    )
+    monkeypatch.setattr(
+        "app.services.rag.generate_text",
+        fail_generate_text,
+    )
+
+    answer = generate_answer(
+        "What is the status of my order?",
+        business_id=TEST_BUSINESS_ID,
+    )
+
+    assert answer == "I don't have enough information to answer that question."
+
+
+def test_retrieve_answer_context_preserves_source_metadata(monkeypatch):
+    from app.services.rag import retrieve_answer_context
+
+    chunk = make_chunk(0.12)
+
+    monkeypatch.setattr(
+        "app.services.rag.retrieve_relevant_chunks",
+        lambda question, business_id, limit=5: [chunk],
+    )
+
+    prompt, sources, confident = retrieve_answer_context(
+        "When is customer support available?",
+        business_id=TEST_BUSINESS_ID,
+    )
+
+    assert confident is True
+    assert prompt is not None
+    assert "Monday to Friday, 8 AM to 5 PM" in prompt
+    assert len(sources) == 1
+
+    source = sources[0]
+    assert source["document_id"] == str(TEST_DOCUMENT_ID)
+    assert source["document_title"] == "Customer Support FAQ"
+    assert source["chunk_id"] == str(TEST_CHUNK_ID)
+    assert source["chunk_index"] == 0
+    assert source["source_type"] == "document"
+    assert source["source_uri"] is None
+    assert source["distance"] == 0.12
+    assert "Monday to Friday, 8 AM to 5 PM" in source["content"]

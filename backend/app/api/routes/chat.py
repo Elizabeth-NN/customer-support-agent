@@ -117,10 +117,15 @@ def chat(
     business_id = get_business_id_for_user(clerk_user_id)
 
     def stream() -> Iterator[str]:
-        prompt, sources, confident = retrieve_answer_context(
-            chat_request.question,
-            business_id=business_id,
-        )
+        try:
+            prompt, sources, confident = retrieve_answer_context(
+                chat_request.question,
+                business_id=business_id,
+            )
+        except Exception:
+            # Continue without retrieved knowledge. The agent may still
+            # be able to answer using an authorized business tool.
+            prompt, sources, confident = None, [], False
 
         yield (
             json.dumps(
@@ -148,11 +153,14 @@ def chat(
                 "to answer the question."
             )
 
-            ticket = create_support_ticket(
-                business_id=business_id,
-                customer_question=chat_request.question,
-                escalation_reason=escalation_reason,
-            )
+            try:
+                ticket = create_support_ticket(
+                    business_id=business_id,
+                    customer_question=chat_request.question,
+                    escalation_reason=escalation_reason,
+                )
+            except Exception:
+                ticket = None
 
             yield (
                 json.dumps(
@@ -173,7 +181,12 @@ def chat(
                         "type": "escalation",
                         "required": True,
                         "reason": escalation_reason,
-                        "ticket_id": str(ticket["id"]),
+                        "ticket_created": ticket is not None,
+                        **(
+                            {"ticket_id": str(ticket["id"])}
+                            if ticket is not None
+                            else {}
+                        ),
                     }
                 )
                 + "\n"
@@ -194,11 +207,14 @@ def chat(
                 "do not contain enough information to answer confidently."
             )
 
-            ticket = create_support_ticket(
-                business_id=business_id,
-                customer_question=chat_request.question,
-                escalation_reason=escalation_reason,
-            )
+            try:
+                ticket = create_support_ticket(
+                    business_id=business_id,
+                    customer_question=chat_request.question,
+                    escalation_reason=escalation_reason,
+                )
+            except Exception:
+                ticket = None
 
             yield (
                 json.dumps(
@@ -216,7 +232,12 @@ def chat(
                         "type": "escalation",
                         "required": True,
                         "reason": escalation_reason,
-                        "ticket_id": str(ticket["id"]),
+                        "ticket_created": ticket is not None,
+                        **(
+                            {"ticket_id": str(ticket["id"])}
+                            if ticket is not None
+                            else {}
+                        ),
                     }
                 )
                 + "\n"
