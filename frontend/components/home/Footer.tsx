@@ -15,10 +15,18 @@ const exploreLinks = [
   { label: "Sign in", href: "/sign-in" },
 ];
 
+const legalLinks = [
+  { label: "Privacy policy", href: "/privacy" },
+  { label: "Terms of use", href: "/terms" },
+  { label: "Cookie policy", href: "/cookies" },
+  { label: "Data processing", href: "/data-processing" },
+  { label: "AI disclosure", href: "/ai-disclosure" },
+];
+
 export default function Footer() {
   return (
     <footer className="w-full border-t border-stone-200 bg-white px-6 py-16 md:px-8 md:py-20">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-12 md:grid-cols-4 lg:grid-cols-5">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-10 md:grid-cols-4 lg:grid-cols-5">
         <div className="col-span-2">
           <Link
             href="/"
@@ -40,10 +48,11 @@ export default function Footer() {
 
         <FooterColumn title="Product" links={productLinks} />
         <FooterColumn title="Explore" links={exploreLinks} />
+        <FooterColumn title="Legal" links={legalLinks} />
       </div>
 
       <div className="mx-auto mt-16 max-w-7xl border-t border-stone-200 pt-8 text-sm text-stone-500 md:mt-20">
-        © 2026 Rafiki. All rights reserved.
+        © {new Date().getFullYear()} Rafiki. All rights reserved.
       </div>
     </footer>
   );
