@@ -14,6 +14,8 @@ from app.api.routes import (
     public_chat_router,
 )
 
+from app.core.observability import RequestLoggingMiddleware
+
 from app.core.rate_limit import limiter
 
 
@@ -21,6 +23,9 @@ app = FastAPI(
     title="Customer Support Agent API",
     version="0.1.0",
 )
+
+
+app.add_middleware(RequestLoggingMiddleware)
 
 
 app.state.limiter = limiter

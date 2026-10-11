@@ -1,4 +1,5 @@
 import json
+import logging
 from collections.abc import Iterator
 from uuid import UUID
 
@@ -13,6 +14,20 @@ from app.schemas.chat import ChatRequest
 from app.services.llm import generate_text
 from app.services.rag import retrieve_answer_context
 from app.services.support_tickets import create_support_ticket
+
+
+logger = logging.getLogger("app.public_chat")
+
+
+def log_stage_failure(request: Request, stage: str, exc: Exception) -> None:
+    """Log a failed pipeline stage without logging customer data."""
+    event = {
+        "event": "public_chat_stage_failed",
+        "request_id": getattr(request.state, "request_id", "unknown"),
+        "stage": stage,
+        "error_type": type(exc).__name__,
+    }
+    logger.warning(json.dumps(event, separators=(",", ":"), sort_keys=True))
 
 
 router = APIRouter(
@@ -119,7 +134,8 @@ def public_chat(
                     public_only=True,
                 )
             )
-        except Exception:
+        except Exception as exc:
+            log_stage_failure(request, "retrieval", exc)
             knowledge_prompt, sources, confident = None, [], False
 
         # Do not expose source IDs, file locations, chunk text, or scores.
@@ -152,7 +168,8 @@ def public_chat(
                         knowledge_prompt=knowledge_prompt,
                     )
                 )
-            except Exception:
+            except Exception as exc:
+                log_stage_failure(request, "generation", exc)
                 escalation_reason = (
                     "The public assistant could not generate an answer."
                 )
@@ -198,8 +215,9 @@ def public_chat(
                     escalation_reason=escalation_reason,
                 )
                 ticket_created = True
-            except Exception:
-                # Do not expose internal errors or ticket details.
+            except Exception as exc:
+                # Log the failure without exposing customer or ticket data.
+                log_stage_failure(request, "ticket_creation", exc)
                 ticket_created = False
 
         yield emit({

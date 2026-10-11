@@ -1,4 +1,5 @@
 import json
+import logging
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -306,3 +307,69 @@ def test_public_chat_does_not_escalate_when_disabled(monkeypatch):
     assert escalation["required"] is False
     assert escalation["ticket_created"] is False
     assert events[-1]["type"] == "done"
+
+
+def test_retrieval_failure_is_logged_without_customer_data(
+    monkeypatch,
+    caplog,
+):
+    caplog.set_level(logging.WARNING, logger="app.public_chat")
+
+    monkeypatch.setattr(
+        public_chat_module,
+        "get_public_business",
+        lambda widget_id: fake_business(),
+    )
+
+    customer_question = "CONFIDENTIAL-CUSTOMER-QUESTION"
+    exception_message = "CONFIDENTIAL-DATABASE-DETAIL"
+
+    def fail_retrieval(*args, **kwargs):
+        raise RuntimeError(exception_message)
+
+    def mock_create_support_ticket(**kwargs):
+        return {"id": UUID("33333333-3333-3333-3333-333333333333")}
+
+    monkeypatch.setattr(
+        public_chat_module,
+        "retrieve_answer_context",
+        fail_retrieval,
+    )
+    monkeypatch.setattr(
+        public_chat_module,
+        "create_support_ticket",
+        mock_create_support_ticket,
+    )
+
+    response = client.post(
+        f"/api/public/{TEST_WIDGET_ID}/chat",
+        json={"question": customer_question},
+        headers={"X-Request-ID": "retrieval-failure-test"},
+    )
+
+    assert response.status_code == 200
+
+    log_records = [
+        record
+        for record in caplog.records
+        if record.name == "app.public_chat"
+    ]
+    failure_record = next(
+        record
+        for record in log_records
+        if json.loads(record.message).get("stage") == "retrieval"
+    )
+    event = json.loads(failure_record.message)
+
+    assert event["event"] == "public_chat_stage_failed"
+    assert event["request_id"] == "retrieval-failure-test"
+    assert event["stage"] == "retrieval"
+    assert event["error_type"] == "RuntimeError"
+
+    assert customer_question not in caplog.text
+    assert exception_message not in caplog.text
+
+    events = parse_events(response)
+    assert events[-1]["type"] == "done"
+
+
