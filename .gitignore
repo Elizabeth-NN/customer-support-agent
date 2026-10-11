@@ -47,7 +47,5 @@ build/
 *.key
 ollama-linux-amd64.tar.zst
 
-# Environment files
-.env
-.env.*
-!.env.example
+# Local database backups
+backend/backups/
